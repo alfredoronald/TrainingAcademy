@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { TipoCursoService } from './tipo_curso.service';
-import { CreateTipoCursoDto } from './tipo_curso.dto';
+import { TipoCursoService } from './tipo-curso.service';
+import { CreateTipoCursoDto } from './tipo-curso.dto';
 
 @Controller('tipo-curso')
 export class TipoCursoController {

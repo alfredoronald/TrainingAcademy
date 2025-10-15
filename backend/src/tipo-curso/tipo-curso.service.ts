@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TipoCurso } from './tipo_curso.entity';
+import { TipoCurso } from './tipo-curso.entity';
 import { Curso } from '../curso/curso.entity';
-import { CreateTipoCursoDto } from './tipo_curso.dto';
+import { CreateTipoCursoDto } from './tipo-curso.dto';
 
 @Injectable()
 export class TipoCursoService {
