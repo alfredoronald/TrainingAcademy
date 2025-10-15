@@ -1,7 +1,8 @@
-// src/usuario/usuario.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Curso } from '../curso/curso.entity';
+import { Inscripcion } from '../inscripcion/inscripcion.entity';
 
-@Entity('usuario')
+@Entity()
 export class Usuario {
   @PrimaryGeneratedColumn()
   id_usuario: number;
@@ -12,7 +13,7 @@ export class Usuario {
   @Column({ length: 100 })
   apellido: string;
 
-  @Column({ unique: true, length: 255 })
+  @Column({ length: 255, unique: true })
   correo_electronico: string;
 
   @Column({ length: 255 })
@@ -20,4 +21,12 @@ export class Usuario {
 
   @Column({ type: 'date', default: () => 'CURRENT_DATE' })
   fecha_ingreso: Date;
+
+  // Relación con Curso
+  @OneToMany(() => Curso, curso => curso.usuario)
+  cursos: Curso[];
+
+  // Relación con Inscripcion
+  @OneToMany(() => Inscripcion, inscripcion => inscripcion.usuario)
+  inscripciones: Inscripcion[];
 }
