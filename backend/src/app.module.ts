@@ -7,11 +7,13 @@ import { InscripcionModule } from './inscripcion/inscripcion.module';
 import { TipoCursoModule } from './tipo-curso/tipo-curso.module';
 
 @Module({
-  imports: [DatabaseModule, 
-            UsuarioModule,
-            CursoModule,
-            RolModule,
-            InscripcionModule,
-            TipoCursoModule],
+  imports: [
+    DatabaseModule,
+    UsuarioModule,
+    CursoModule,
+    RolModule,
+    InscripcionModule,
+    TipoCursoModule,
+  ],
 })
 export class AppModule {}

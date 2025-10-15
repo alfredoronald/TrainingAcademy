@@ -5,9 +5,9 @@ import { PermisoService } from './permiso.service';
 import { PermisoController } from './permiso.controller';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Permiso])],
-    providers: [PermisoService],
-    controllers: [PermisoController],
-    exports: [PermisoService],
+  imports: [TypeOrmModule.forFeature([Permiso])],
+  providers: [PermisoService],
+  controllers: [PermisoController],
+  exports: [PermisoService],
 })
 export class PermisoModule {}

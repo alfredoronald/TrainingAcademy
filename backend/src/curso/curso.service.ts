@@ -19,20 +19,22 @@ export class CursoService {
   // Crear curso
   async create(dto: CreateCursoDto): Promise<Curso> {
     // Buscar el usuario asociado
-    const usuario = await this.usuarioRepo.findOne({ where: { id_usuario: dto.id_usuario } });
+    const usuario = await this.usuarioRepo.findOne({
+      where: { id_usuario: dto.id_usuario },
+    });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
     // Crear la entidad Curso
     const curso = this.cursoRepo.create({
-  nombre_curso: dto.nombre_curso,
-  descripcion: dto.descripcion,
-  duracion: dto.duracion,
-  modalidad: dto.modalidad,
-  costo: dto.costo,
-  cupos: dto.cupos,
-  usuario: usuario, // entidad completa
-  estado_disponibilidad: EstadoDisponibilidad.ACTIVO, // ⚠️ usa el enum
-});
+      nombre_curso: dto.nombre_curso,
+      descripcion: dto.descripcion,
+      duracion: dto.duracion,
+      modalidad: dto.modalidad,
+      costo: dto.costo,
+      cupos: dto.cupos,
+      usuario: usuario, // entidad completa
+      estado_disponibilidad: EstadoDisponibilidad.ACTIVO, // ⚠️ usa el enum
+    });
 
     // Guardar y retornar
     return await this.cursoRepo.save(curso);

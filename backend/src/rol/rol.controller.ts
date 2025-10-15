@@ -4,20 +4,20 @@ import { CreateRolDto } from './rol.dto';
 
 @Controller('rol')
 export class RolController {
-    constructor(private readonly rolService: RolService) {}
+  constructor(private readonly rolService: RolService) {}
 
-    @Post()
-    create(@Body() dto: CreateRolDto) {
-        return this.rolService.create(dto);
-    }
+  @Post()
+  create(@Body() dto: CreateRolDto) {
+    return this.rolService.create(dto);
+  }
 
-    @Get()
-    findAll() {
-        return this.rolService.findAll();
-    }
+  @Get()
+  findAll() {
+    return this.rolService.findAll();
+  }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.rolService.findOne(+id);
-    }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.rolService.findOne(+id);
+  }
 }

@@ -22,13 +22,17 @@ export class UsuarioService {
 
   // findOne devuelve null si no encuentra el usuario
   async findOne(id: number): Promise<Usuario | null> {
-    const usuario = await this.usuarioRepo.findOne({ where: { id_usuario: id } });
+    const usuario = await this.usuarioRepo.findOne({
+      where: { id_usuario: id },
+    });
     return usuario ?? null;
   }
 
   // findByEmail devuelve null si no encuentra el usuario
   async findByEmail(email: string): Promise<Usuario | null> {
-    const usuario = await this.usuarioRepo.findOne({ where: { correo_electronico: email } });
+    const usuario = await this.usuarioRepo.findOne({
+      where: { correo_electronico: email },
+    });
     return usuario ?? null;
   }
 }

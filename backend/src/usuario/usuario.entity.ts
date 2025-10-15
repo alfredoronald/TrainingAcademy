@@ -23,10 +23,10 @@ export class Usuario {
   fecha_ingreso: Date;
 
   // Relación con Curso
-  @OneToMany(() => Curso, curso => curso.usuario)
+  @OneToMany(() => Curso, (curso) => curso.usuario)
   cursos: Curso[];
 
   // Relación con Inscripcion
-  @OneToMany(() => Inscripcion, inscripcion => inscripcion.usuario)
+  @OneToMany(() => Inscripcion, (inscripcion) => inscripcion.usuario)
   inscripciones: Inscripcion[];
 }

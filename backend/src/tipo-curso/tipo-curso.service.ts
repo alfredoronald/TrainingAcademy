@@ -16,7 +16,9 @@ export class TipoCursoService {
 
   async create(dto: CreateTipoCursoDto): Promise<TipoCurso> {
     // Buscar el curso relacionado
-    const curso = await this.cursoRepo.findOne({ where: { id_curso: dto.id_curso } });
+    const curso = await this.cursoRepo.findOne({
+      where: { id_curso: dto.id_curso },
+    });
     if (!curso) throw new NotFoundException('Curso no encontrado');
 
     // Crear la entidad TipoCurso

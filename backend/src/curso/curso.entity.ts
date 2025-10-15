@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Usuario } from '../usuario/usuario.entity';
 import { EstadoDisponibilidad } from './estado.enum'; // ⚠️ debe apuntar al enum exportado
 
@@ -15,7 +21,7 @@ export class Curso {
 
   @Column({
     type: 'enum',
-    enum: EstadoDisponibilidad,  // ⚠️ aquí usamos el enum
+    enum: EstadoDisponibilidad, // ⚠️ aquí usamos el enum
     default: EstadoDisponibilidad.ACTIVO, // ⚠️ default también usa el enum
   })
   estado_disponibilidad: EstadoDisponibilidad;
@@ -32,7 +38,7 @@ export class Curso {
   @Column({ type: 'int', nullable: true })
   cupos: number;
 
-   @ManyToOne(() => Usuario, usuario => usuario.cursos)
-@JoinColumn({ name: 'id_usuario' })
-usuario: Usuario;
+  @ManyToOne(() => Usuario, (usuario) => usuario.cursos)
+  @JoinColumn({ name: 'id_usuario' })
+  usuario: Usuario;
 }

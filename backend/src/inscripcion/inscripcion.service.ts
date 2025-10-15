@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Inscripcion, EstadoInscripcion } from './inscripcion.entity';
@@ -21,22 +25,29 @@ export class InscripcionService {
 
   // Crear inscripción
   async create(dto: CreateInscripcionDto): Promise<Inscripcion> {
-    const curso = await this.cursoRepo.findOne({ where: { id_curso: dto.id_curso } });
+    const curso = await this.cursoRepo.findOne({
+      where: { id_curso: dto.id_curso },
+    });
     if (!curso) throw new NotFoundException('Curso no encontrado');
 
-    const usuario = await this.usuarioRepo.findOne({ where: { id_usuario: dto.id_usuario } });
+    const usuario = await this.usuarioRepo.findOne({
+      where: { id_usuario: dto.id_usuario },
+    });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
     const existe = await this.inscripcionRepo.findOne({
       where: { curso: curso, usuario: usuario },
     });
-    if (existe) throw new ConflictException('El usuario ya está inscrito en este curso');
+    if (existe)
+      throw new ConflictException('El usuario ya está inscrito en este curso');
 
     // Crear la entidad Inscripcion usando objetos de relación
     const inscripcion = this.inscripcionRepo.create({
-      curso,    // objeto Curso
-      usuario,  // objeto Usuario
-      estado: dto.estado ? (dto.estado as EstadoInscripcion) : EstadoInscripcion.ACTIVA,
+      curso, // objeto Curso
+      usuario, // objeto Usuario
+      estado: dto.estado
+        ? (dto.estado as EstadoInscripcion)
+        : EstadoInscripcion.ACTIVA,
       precio: dto.precio,
       precio_final: dto.precio_final,
       fecha_inscripcion: dto.fecha_inscripcion || new Date(),
