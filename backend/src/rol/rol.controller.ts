@@ -1,23 +1,13 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param } from '@nestjs/common';
 import { RolService } from './rol.service';
-import { CreateRolDto } from './rol.dto';
 
-@Controller('rol')
+@Controller('roles')
 export class RolController {
-  constructor(private readonly rolService: RolService) {}
+  constructor(private svc: RolService) {}
 
-  @Post()
-  create(@Body() dto: CreateRolDto) {
-    return this.rolService.create(dto);
-  }
-
-  @Get()
-  findAll() {
-    return this.rolService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.rolService.findOne(+id);
-  }
+  @Post() create(@Body() b: any) { return this.svc.create(b); }
+  @Get() findAll() { return this.svc.findAll(); }
+  @Get(':id') findOne(@Param('id') id: string) { return this.svc.findOne(Number(id)); }
+  @Put(':id') update(@Param('id') id: string, @Body() b: any) { return this.svc.update(Number(id), b); }
+  @Delete(':id') remove(@Param('id') id: string) { return this.svc.remove(Number(id)); }
 }
