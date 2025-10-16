@@ -1,23 +1,32 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
-import { CreateUsuarioDto } from './usuario.dto';
 
-@Controller('usuario')
+@Controller('usuarios')
 export class UsuarioController {
-  constructor(private readonly usuarioService: UsuarioService) {}
+  constructor(private svc: UsuarioService) {}
 
   @Post()
-  create(@Body() dto: CreateUsuarioDto) {
-    return this.usuarioService.create(dto);
+  create(@Body() body: any) {
+    return this.svc.create(body);
   }
 
   @Get()
   findAll() {
-    return this.usuarioService.findAll();
+    return this.svc.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usuarioService.findOne(+id);
+    return this.svc.findOne(Number(id));
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() body: any) {
+    return this.svc.update(Number(id), body);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.svc.remove(Number(id));
   }
 }
