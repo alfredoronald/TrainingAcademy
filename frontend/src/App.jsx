@@ -1,19 +1,17 @@
 import { useState } from 'react';
-import WelcomeScreen from './components/WelcomeScreen';
-import RoleSelectionScreen from './components/RoleSelectionScreen';
-import StudentLoginScreen from './components/StudentLoginScreen';
-import TeacherLoginScreen from './components/TeacherLoginScreen';
-import CourseCatalogScreen from './components/CourseCatalogScreen';
-import LeaderboardScreen from './components/LeaderboardScreen';
-import BadgesScreen from './components/BadgesScreen';
-import ProfileScreen from './components/ProfileScreen';
+import WelcomeScreen from './components/welcome.jsx';
+import RoleSelectionScreen from './components/role-selection.jsx';
+import StudentLoginScreen from './components/login-estudent.jsx';
+import TeacherLoginScreen from './components/teacher-login.jsx';
+import CourseCatalogScreen from './components/cuorse-catalogo.jsx';
+import LeaderboardScreen from './components/lead-board.jsx';
+import BadgesScreen from './components/badges.jsx';
+import ProfileScreen from './components/profile.jsx';
 
-type Screen = 'welcome' | 'role-selection' | 'student-login' | 'teacher-login' | 'catalog' | 'leaderboard' | 'badges' | 'profile';
-type Role = 'student' | 'teacher' | null;
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
-  const [selectedRole, setSelectedRole] = useState<Role>(null);
+  const [currentScreen, setCurrentScreen] = useState('welcome');
+  const [selectedRole, setSelectedRole] = useState(null);
 
   const handleRegister = () => {
     setCurrentScreen('role-selection');
@@ -23,7 +21,7 @@ function App() {
     setCurrentScreen('role-selection');
   };
 
-  const handleRoleSelect = (role: 'student' | 'teacher') => {
+  const handleRoleSelect = (role) => {
     setSelectedRole(role);
     if (role === 'student') {
       setCurrentScreen('student-login');
@@ -46,8 +44,8 @@ function App() {
     setCurrentScreen('catalog');
   };
 
-  const handleNavigate = (screen: string) => {
-    setCurrentScreen(screen as Screen);
+  const handleNavigate = (screen) => {
+    setCurrentScreen(screen);
   };
 
   return (
