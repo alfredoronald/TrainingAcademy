@@ -1,23 +1,12 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param } from '@nestjs/common';
 import { PermisoService } from './permiso.service';
-import { CreatePermisoDto } from './permiso.dto';
 
-@Controller('permiso')
+@Controller('permisos')
 export class PermisoController {
-  constructor(private readonly permisoService: PermisoService) {}
-
-  @Post()
-  create(@Body() dto: CreatePermisoDto) {
-    return this.permisoService.create(dto);
-  }
-
-  @Get()
-  findAll() {
-    return this.permisoService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.permisoService.findOne(+id);
-  }
+  constructor(private svc: PermisoService) {}
+  @Post() create(@Body() b: any) { return this.svc.create(b); }
+  @Get() findAll() { return this.svc.findAll(); }
+  @Get(':id') findOne(@Param('id') id: string) { return this.svc.findOne(+id); }
+  @Put(':id') update(@Param('id') id: string, @Body() b: any) { return this.svc.update(+id, b); }
+  @Delete(':id') remove(@Param('id') id: string) { return this.svc.remove(+id); }
 }

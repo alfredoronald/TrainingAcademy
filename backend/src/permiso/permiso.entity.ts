@@ -1,11 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity()
+@Entity({ name: 'permiso' })
 export class Permiso {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'id_permiso' })
   id_permiso: number;
 
-  @Column({ length: 100, nullable: false })
+  @Column({ length: 100 })
   nombre: string;
 
   @Column({ type: 'text', nullable: true })
