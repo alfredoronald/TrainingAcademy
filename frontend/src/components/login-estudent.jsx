@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { User, HelpCircle } from 'lucide-react';
-
-
 
 export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLoginSuccess();
+    setError('');
+
+    try {
+      // URL del endpoint NestJS (ajusta el puerto si tu backend usa otro)
+      const response = await axios.get('http://localhost:3000/api/usuarios', {
+        email,
+        password,
+        role: 'student', // opcional si tu sistema distingue roles
+      });
+      console.log(response);
+      if (response.status === 200) {
+        onLoginSuccess(response.data);
+      }
+    } catch (err) {
+      setError('Correo o contraseña incorrectos');
+    }
   };
 
   return (
@@ -61,6 +76,10 @@ export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
               required
             />
           </div>
+
+          {error && (
+            <p className="text-red-600 text-sm font-medium text-center">{error}</p>
+          )}
 
           <button
             type="submit"
