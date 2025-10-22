@@ -1,9 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { 
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Inscripcion } from '../inscripcion/inscripcion.entity';
 import { ProgresoCurso } from '../progreso-curso/progreso-curso.entity';
 import { Puntos } from '../puntaje/puntaje.entity';
 import { Mensaje } from '../mensaje/mensaje.entity';
 import { UsuarioInsignia } from '../usuario-insignia/usuario-insignia.entity';
+import { DetalleRol } from '../detalle-rol/detalle-rol.entity';
 
 @Entity({ name: 'usuario' })
 export class Usuario {
@@ -39,4 +46,8 @@ export class Usuario {
 
   @OneToMany(() => UsuarioInsignia, ui => ui.usuario)
   insignias: UsuarioInsignia[];
+
+  // ✅ Relación con DetalleRol usando clave primaria compuesta
+  @OneToMany(() => DetalleRol, detalleRol => detalleRol.usuario)
+  detalleRoles: DetalleRol[];
 }

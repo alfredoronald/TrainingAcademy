@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react'; 
 import { User, HelpCircle } from 'lucide-react';
 
 export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
@@ -8,24 +7,32 @@ export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
 
-    try {
-      // URL del endpoint NestJS (ajusta el puerto si tu backend usa otro)
-      const response = await axios.get('http://localhost:3000/api/usuarios', {
-        email,
-        password,
-        role: 'student', // opcional si tu sistema distingue roles
-      });
-      console.log(response);
-      if (response.status === 200) {
-        onLoginSuccess(response.data);
-      }
-    } catch (err) {
-      setError('Correo o contraseña incorrectos');
+  try {
+    const res = await fetch('http://localhost:3000/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ correo_electronico: email, password }),
+    });
+
+    const data = await res.json();
+    console.log(data.roles);
+
+    if (!res.ok) throw new Error(data.message || 'Error de login');
+
+    // data.roles es un array de roles
+    if (data.roles.includes('alumno')) {
+      // redirigir a pantalla alumno
+    } else if (data.roles.includes('maestro')) {
+      // redirigir a pantalla maestro
     }
-  };
+
+    onLoginSuccess(data); // opcional: pasa datos del usuario
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4 relative">
@@ -46,9 +53,11 @@ export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
           Iniciar Sesión
         </h1>
 
-        <p className="text-gray-600 text-center mb-8">
+        <p className="text-gray-600 text-center mb-4">
           Accede a tu cuenta de Training Academy como alumno
         </p>
+
+        {error && <p className="text-red-600 text-center mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -76,10 +85,6 @@ export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
               required
             />
           </div>
-
-          {error && (
-            <p className="text-red-600 text-sm font-medium text-center">{error}</p>
-          )}
 
           <button
             type="submit"

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthController } from './auth/auth.controller';
+import { UsuarioService } from './modules/usuario/usuario.service';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -64,14 +66,14 @@ import { UsuarioInsigniaModule } from './modules/usuario-insignia/usuario-insign
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'postgres',
-      database: process.env.DB_NAME || 'taller_db',
+      password: process.env.DB_PASS || '13042003',
+      database: process.env.DB_NAME || 'training_academy',
       entities: [
         Usuario, Rol, Permiso, DetalleRol, PermisoRol, Curso, HorarioCurso, Asistencia, TipoCurso,
         Inscripcion, Pago, ProgresoCurso, Modulo, ProgresoModulo, Temario, ProgresoTema, Foro, Mensaje,
         Evaluacion, Puntos, Recompensa, Canje, Ranking, Insignia, UsuarioInsignia
       ],
-      synchronize: true, // <<-- sincronización automática
+      synchronize: false, // <<-- sincronización automática
       logging: false
     }),
     UsuarioModule, RolModule, PermisoModule, DetalleRolModule, PermisoRolModule,
@@ -79,6 +81,10 @@ import { UsuarioInsigniaModule } from './modules/usuario-insignia/usuario-insign
     PagoModule, ProgresoCursoModule, ModuloModule, ProgresoModuloModule, TemarioModule,
     ProgresoTemaModule, ForoModule, MensajeModule, EvaluacionModule, PuntajeModule,
     RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule
+  
   ],
+
+  controllers: [AuthController], // <<-- agrega tu controlador
+   
 })
 export class AppModule {}

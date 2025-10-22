@@ -4,31 +4,33 @@ import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  // Carga variables de entorno
   dotenv.config();
 
   const app = await NestFactory.create(AppModule);
 
-  // ✅ Habilitar CORS (para permitir conexión con tu frontend)
-  app.enableCors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // agrega aquí los orígenes permitidos
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true, // si usarás cookies o tokens con auth
-  });
-
-  // ✅ Prefijo global para tus rutas
+  // Prefijo global para todas las rutas
   app.setGlobalPrefix('api');
 
-  // ✅ Pipes globales de validación
+  // Habilitar CORS correctamente
+  app.enableCors({
+    origin: 'http://localhost:5173', // sin barra final
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,               // permite cookies si las usas
+  });
+
+  // Validaciones globales para DTOs
   app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: false,
+    new ValidationPipe({ 
+      whitelist: true,              
+      forbidNonWhitelisted: true,   
+      transform: true,              
     }),
   );
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-
   console.log(`🚀 Server running on http://localhost:${port}/api`);
 }
 
