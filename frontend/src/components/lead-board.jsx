@@ -1,59 +1,49 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react'; 
 import { GraduationCap, Award, Trophy, Medal, User } from 'lucide-react';
 
-const topStudents = [
-  {
-    id: 1,
-    name: 'Elena Torres',
-    rank: 1,
-    courses: 15,
-    points: 12500,
-    icon: Trophy,
-    iconColor: 'text-yellow-500',
-    bgColor: 'bg-yellow-50',
-    badge: 'Top 1',
-    badgeColor: 'bg-blue-100 text-blue-700',
-  },
-  {
-    id: 2,
-    name: 'Miguel Ángel Ruiz',
-    rank: 2,
-    courses: 14,
-    points: 11800,
-    icon: Medal,
-    iconColor: 'text-gray-400',
-    bgColor: 'bg-gray-50',
-    badge: 'Top 2',
-    badgeColor: 'bg-blue-100 text-blue-700',
-  },
-  {
-    id: 3,
-    name: 'Sofía Morales',
-    rank: 3,
-    courses: 13,
-    points: 10950,
-    icon: Award,
-    iconColor: 'text-orange-500',
-    bgColor: 'bg-orange-50',
-    badge: 'Top 3',
-    badgeColor: 'bg-blue-100 text-blue-700',
-  },
-  {
-    id: 4,
-    name: 'Diego Fernández',
-    rank: 4,
-    courses: 12,
-    points: 9800,
-    icon: Medal,
-    iconColor: 'text-gray-300',
-    bgColor: 'bg-gray-50',
-    badge: '',
-    badgeColor: '',
-  },
-];
-
 export default function LeaderboardScreen({ onNavigate }) {
+  const [topStudents, setTopStudents] = useState([]);
+
+  // 🔹 Función para cargar rankings desde el backend
+  useEffect(() => {
+    const fetchRankings = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/rankings'); // ajusta la URL si es necesario
+        const data = await res.json();
+
+        // Transformamos los datos para el frontend
+        const transformed = data.map((item, index) => ({
+          id: item.id_ranking,
+          name: item.usuario?.nombre || 'Sin nombre',
+          rank: index + 1,
+          courses: item.curso ? 1 : 0, // si quieres contar cursos completados, ajustar según tu lógica
+          points: item.posicion || 0,
+          icon:
+            index === 0 ? Trophy : index === 1 ? Medal : index === 2 ? Award : Medal,
+          iconColor:
+            index === 0
+              ? 'text-yellow-500'
+              : index === 1
+              ? 'text-gray-400'
+              : index === 2
+              ? 'text-orange-500'
+              : 'text-gray-300',
+          bgColor:
+            index < 3 ? (index === 0 ? 'bg-yellow-50' : index === 2 ? 'bg-orange-50' : 'bg-gray-50') : 'bg-gray-50',
+          badge: index < 3 ? `Top ${index + 1}` : '',
+          badgeColor: index < 3 ? 'bg-blue-100 text-blue-700' : '',
+        }));
+
+        setTopStudents(transformed);
+      } catch (error) {
+        console.error('Error cargando rankings:', error);
+      }
+    };
+
+    fetchRankings();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
