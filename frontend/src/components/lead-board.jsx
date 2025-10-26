@@ -53,7 +53,7 @@ export default function LeaderboardScreen({ onNavigate }) {
               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                 <GraduationCap className="w-6 h-6 text-white" strokeWidth={1.5} />
               </div>
-              <span className="text-xl font-semibold text-gray-900">Training Academy</span>
+              <a className="text-xl font-semibold text-gray-900 cursor-pointer" onClick={() => onNavigate('catalog')} >Training Academy</a>
             </div>
 
             <div className="flex items-center gap-6">
