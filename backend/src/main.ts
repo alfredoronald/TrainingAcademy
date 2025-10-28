@@ -11,7 +11,7 @@ async function bootstrap() {
 
   // Prefijo global para todas las rutas
   app.setGlobalPrefix('api');
-
+m
   // Habilitar CORS correctamente
   app.enableCors({
     origin: 'http://localhost:5173', // sin barra final
