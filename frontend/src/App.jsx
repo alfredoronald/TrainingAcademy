@@ -57,11 +57,19 @@ function App() {
         <RoleSelectionScreen onRoleSelect={handleRoleSelect} onBack={handleBack} />
       )}
       {currentScreen === 'student-login' && (
-        <StudentLoginScreen onBack={handleBack} onLoginSuccess={handleLoginSuccess} />
-      )}
-      {currentScreen === 'teacher-login' && (
-        <TeacherLoginScreen onBack={handleBack} onLoginSuccess={handleLoginSuccess} />
-      )}
+  <StudentLoginScreen
+    onBack={handleBack}
+    onLoginSuccess={handleLoginSuccess}
+    onNavigate={handleNavigate} // 🔹 Agregado
+  />
+)}
+{currentScreen === 'teacher-login' && (
+  <TeacherLoginScreen
+    onBack={handleBack}
+    onLoginSuccess={handleLoginSuccess}
+    onNavigate={handleNavigate} // 🔹 Agregado
+  />
+)}
       {currentScreen === 'catalog' && (
         <CourseCatalogScreen role={selectedRole} onNavigate={handleNavigate} />
       )}

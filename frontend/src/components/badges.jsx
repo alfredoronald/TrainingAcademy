@@ -33,7 +33,13 @@ export default function BadgesScreen({ onNavigate }) {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg">
                 <Award className="w-5 h-5 text-green-600" />
+                 {loadingPuntos ? (
+                <span className="text-gray-500 text-sm">Cargando...</span>
+              ) : errorPuntos ? (
+                <span className="text-red-600 text-sm">{errorPuntos}</span>
+              ) : (
                 <span className="font-semibold text-gray-900">{puntos} puntos</span>
+              )}
               </div>
 
               <button

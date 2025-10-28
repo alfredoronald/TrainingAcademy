@@ -1,38 +1,35 @@
-import React, { useState } from 'react'; 
+import React, { useState } from 'react';
 import { User, HelpCircle } from 'lucide-react';
+import { useAuthContext } from '../context/AuthContext'; // ✅ usamos el contexto
 
-export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
+export default function StudentLoginScreen({ onBack, onNavigate }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { setUser, errorAuth, loadingAuth } = useAuthContext(); // ✅ tomamos setUser del contexto
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    try {
+      const res = await fetch("http://localhost:3000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo_electronico: email, password }),
+      });
 
-  try {
-    const res = await fetch('http://localhost:3000/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correo_electronico: email, password }),
-    });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Correo o contraseña incorrectos");
 
-    const data = await res.json();
-    console.log(data.roles);
+      // ✅ Guardamos el usuario logueado globalmente
+      setUser(data);
 
-    if (!res.ok) throw new Error(data.message || 'Error de login');
-
-    // data.roles es un array de roles
-    if (data.roles.includes('alumno')) {
-      // redirigir a pantalla alumno
-    } else if (data.roles.includes('maestro')) {
-      // redirigir a pantalla maestro
+      // ✅ Verificamos roles
+      if (data.roles.includes("Estudiante")) onNavigate("catalog");
+      else if (data.roles.includes("Docente")) onNavigate("teacher-dashboard");
+      else alert("No tienes permisos válidos");
+    } catch (err) {
+      alert(err.message);
     }
-
-    onLoginSuccess(data); // opcional: pasa datos del usuario
-  } catch (err) {
-    alert(err.message);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4 relative">
@@ -57,7 +54,7 @@ export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
           Accede a tu cuenta de Training Academy como alumno
         </p>
 
-        {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+        {errorAuth && <p className="text-red-600 text-center mb-4">{errorAuth}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -88,9 +85,10 @@ export default function StudentLoginScreen({ onBack, onLoginSuccess }) {
 
           <button
             type="submit"
+            disabled={loadingAuth}
             className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
           >
-            Iniciar Sesión
+            {loadingAuth ? "Cargando..." : "Iniciar Sesión"}
           </button>
         </form>
 

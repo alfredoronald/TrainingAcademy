@@ -1,9 +1,32 @@
-import React from 'react';
-import { GraduationCap, Award, Trophy, Medal, User, Mail, BarChart3 } from 'lucide-react';
+import React from "react";
+import {
+  GraduationCap,
+  Award,
+  Trophy,
+  Medal,
+  User,
+  Mail,
+  BarChart3,
+} from "lucide-react";
+import { useAuthContext } from "../context/AuthContext";
+import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
 
-export default function ProfileScreen({ onNavigate }) {
+export default function Profile({ onNavigate }) {
+  const { user } = useAuthContext();
+  const idUsuario = user?.id_usuario;
+  const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(idUsuario);
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <p className="text-red-600 text-lg">No has iniciado sesión.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* HEADER */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -11,17 +34,28 @@ export default function ProfileScreen({ onNavigate }) {
               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                 <GraduationCap className="w-6 h-6 text-white" strokeWidth={1.5} />
               </div>
-              <a className="text-xl font-semibold text-gray-900 cursor-pointer" onClick={() => onNavigate('catalog')} >Training Academy</a>
+              <a
+                className="text-xl font-semibold text-gray-900 cursor-pointer"
+                onClick={() => onNavigate("catalog")}
+              >
+                Training Academy
+              </a>
             </div>
 
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg">
                 <Award className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-gray-900">2500 puntos</span>
+                {loadingPuntos ? (
+                  <span className="text-gray-600">Cargando...</span>
+                ) : errorPuntos ? (
+                  <span className="text-red-600">{errorPuntos}</span>
+                ) : (
+                  <span className="font-semibold text-gray-900">{puntos} puntos</span>
+                )}
               </div>
 
               <button
-                onClick={() => onNavigate('leaderboard')}
+                onClick={() => onNavigate("leaderboard")}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <Trophy className="w-5 h-5 text-gray-700" />
@@ -29,7 +63,7 @@ export default function ProfileScreen({ onNavigate }) {
               </button>
 
               <button
-                onClick={() => onNavigate('badges')}
+                onClick={() => onNavigate("badges")}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <Medal className="w-5 h-5 text-gray-700" />
@@ -37,7 +71,7 @@ export default function ProfileScreen({ onNavigate }) {
               </button>
 
               <button
-                onClick={() => onNavigate('profile')}
+                onClick={() => onNavigate("profile")}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <User className="w-5 h-5 text-gray-700" />
@@ -48,36 +82,47 @@ export default function ProfileScreen({ onNavigate }) {
         </div>
       </header>
 
+      {/* MAIN */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-10">
           <h1 className="text-4xl font-semibold text-blue-600 mb-3">Mi Perfil</h1>
-          <p className="text-lg text-gray-600">Gestiona tu información y revisa tu progreso</p>
+          <p className="text-lg text-gray-600">
+            Gestiona tu información y revisa tu progreso
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
+          {/* Columna principal */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
               <div className="flex items-center gap-3 mb-8">
                 <User className="w-6 h-6 text-gray-900" />
-                <h2 className="text-xl font-semibold text-gray-900">Información Personal</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Información Personal
+                </h2>
               </div>
 
               <div className="flex items-start gap-6 mb-8">
                 <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-3xl font-bold text-white">UD</span>
+                  <span className="text-3xl font-bold text-white">
+                    {user.nombre?.[0] || "U"}
+                    {user.apellido?.[0] || "D"}
+                  </span>
                 </div>
 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-2xl font-semibold text-gray-900">Usuario Demo</h3>
+                    <h3 className="text-2xl font-semibold text-gray-900">
+                      {user.nombre} {user.apellido}
+                    </h3>
                     <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full flex items-center gap-1">
                       <User className="w-3 h-3" />
-                      Alumno
+                      {user.roles?.[0] || "Usuario"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Mail className="w-4 h-4" />
-                    <span>usuario@trainingacademy.com</span>
+                    <span>{user.correo_electronico}</span>
                   </div>
                 </div>
               </div>
@@ -85,35 +130,48 @@ export default function ProfileScreen({ onNavigate }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50 rounded-xl p-6">
                   <p className="text-sm text-gray-600 mb-2">Cursos completados</p>
-                  <p className="text-4xl font-bold text-blue-600">3</p>
+                  <p className="text-4xl font-bold text-blue-600">
+                    {user.cursosCompletados || 0}
+                  </p>
                 </div>
 
                 <div className="bg-green-50 rounded-xl p-6">
                   <p className="text-sm text-gray-600 mb-2">Puntos totales</p>
-                  <p className="text-4xl font-bold text-green-600">2500</p>
+                  <p className="text-4xl font-bold text-green-600">
+                    {puntos || 0}
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mt-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Medal className="w-6 h-6 text-gray-900" />
-                <h2 className="text-xl font-semibold text-gray-900">Mis Insignias</h2>
-              </div>
+            {/* Insignias */}
+            {user.usuarioInsignias?.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mt-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Medal className="w-6 h-6 text-gray-900" />
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Mis Insignias
+                  </h2>
+                </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center"
-                  >
-                    <Medal className="w-8 h-8 text-gray-400" />
-                  </div>
-                ))}
+                <div className="grid grid-cols-4 gap-4">
+                  {user.usuarioInsignias.map((ui) => (
+                    <div
+                      key={ui.id_usuario_insignia}
+                      className="aspect-square bg-yellow-100 rounded-xl flex flex-col items-center justify-center text-center p-2"
+                    >
+                      <Medal className="w-8 h-8 text-yellow-600 mb-1" />
+                      <span className="text-sm font-medium text-gray-800">
+                        {ui.insignia.nombre}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
+          {/* Columna derecha */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
               <div className="flex items-center gap-3 mb-6">
@@ -122,7 +180,7 @@ export default function ProfileScreen({ onNavigate }) {
               </div>
 
               <p className="text-gray-600 mb-6">
-                Revisa tu progreso semanal y estadísticas de aprendizaje
+                Revisa tu progreso semanal y estadísticas de aprendizaje.
               </p>
 
               <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
