@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, HelpCircle } from 'lucide-react';
 
-export default function StudentRegisterScreen({ onBack, onLoginSuccess }) {
+export default function StudentRegisterScreen({ onBack }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -10,41 +10,35 @@ export default function StudentRegisterScreen({ onBack, onLoginSuccess }) {
   const [error, setError] = useState('');
 
   const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (signUpError) throw signUpError;
+  try {
+    const res = await fetch('http://localhost:3000/api/usuarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: firstName,
+        apellido: lastName,
+        correo_electronico: email,
+        password: password,
+        rol: 'student',
+      }),
+    });
 
-      if (data.user) {
-        const fullName = `${firstName} ${lastName}`.trim();
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email,
-            full_name: fullName,
-            role: 'student',
-            points: 0,
-            courses_completed: 0,
-          });
-        if (profileError) throw profileError;
+    const data = await res.json();
 
-        alert('Cuenta creada exitosamente. Por favor inicia sesión.');
-        onBack();
-      }
-    } catch (err) {
-      setError(err.message || 'Error al crear la cuenta');
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!res.ok) throw new Error(data.message || 'Error al crear la cuenta');
 
+    alert('Cuenta creada exitosamente. Por favor inicia sesión.');
+    onBack();
+  } catch (err) {
+    setError(err.message || 'Error al crear la cuenta');
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4 relative">
       <div className="bg-white rounded-2xl p-10 shadow-xl max-w-md w-full">

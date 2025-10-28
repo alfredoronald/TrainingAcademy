@@ -17,6 +17,7 @@ export default function StudentLoginScreen({ onBack, onNavigate }) {
       });
 
       const data = await res.json();
+      console.log("🔐 Datos de login recibidos:", data);
       if (!res.ok) throw new Error(data.message || "Correo o contraseña incorrectos");
 
       // ✅ Guardamos el usuario logueado globalmente

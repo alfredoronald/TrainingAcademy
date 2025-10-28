@@ -1,26 +1,25 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Usuario } from '../usuario/usuario.entity';
-import { Curso } from '../curso/curso.entity';
 
 @Entity({ name: 'ranking' })
 export class Ranking {
-  @PrimaryGeneratedColumn({ name: 'id_ranking' })
-  id_ranking: number;
+  // ❌ REMOVER PrimaryGeneratedColumn
+  // ✅ Usar PrimaryColumn para columnas compuestas o sin autoincrement
+  @PrimaryColumn({ name: 'tipo_ranking' })
+  tipo_ranking: string;
 
+  @PrimaryColumn({ name: 'id_usuario' })
+  id_usuario: number;
+
+  @PrimaryColumn({ name: 'posicion' })
+  posicion: number;
+
+  @Column({ type: 'date', name: 'fecha_generado' })
+  fecha_generado: string;
+
+  // Relación con Usuario
   @ManyToOne(() => Usuario)
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
-
-  @ManyToOne(() => Curso, { nullable: true })
-  @JoinColumn({ name: 'id_curso' })
-  curso: Curso | null;
-
-  @Column({ length: 50, nullable: true })
-  tipo_ranking: string;
-
-  @Column({ type: 'int', nullable: true })
-  posicion: number;
-
-  @Column({ type: 'date', name: 'fecha_generado', nullable: true })
-  fecha_generado: string;
 }
+
