@@ -2,10 +2,13 @@ import React from "react";
 import { GraduationCap, Award, Trophy, Medal, User } from "lucide-react";
 import { useInsignias } from "../hooks/useInsignia";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario"; // 👈 opcional si ya lo tienes
+import { useAuthContext } from "../context/AuthContext";
 
 export default function BadgesScreen({ onNavigate }) {
   const { insignias, loading, error } = useInsignias();
-  const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(1); // 🔹 puedes reemplazar 1 por el id del usuario autenticado
+  const { user } = useAuthContext();
+  const idUsuario = user?.id_usuario;
+  const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(idUsuario); // 🔹 puedes reemplazar 1 por el id del usuario autenticado
 
   if (loading) return <div className="p-10 text-gray-600">Cargando insignias...</div>;
   if (error) return <div className="p-10 text-red-600">{error}</div>;

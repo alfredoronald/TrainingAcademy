@@ -2,10 +2,13 @@ import React from "react";
 import { GraduationCap, Award, Trophy, Medal, User } from "lucide-react";
 import { useRankings } from "../hooks/useRankings";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
+import { useAuthContext } from "../context/AuthContext";
 
 export default function LeaderboardScreen({ onNavigate }) {
   const { rankings: topStudents, loading, error } = useRankings();
-   const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(1); // 👈 ID del usuario logueado
+  const { user } = useAuthContext();
+  const idUsuario = user?.id_usuario;
+   const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(idUsuario); // 👈 ID del usuario logueado
 
   if (loading) return <div className="p-10 text-gray-600">Cargando...</div>;
   if (error) return <div className="p-10 text-red-600">{error}</div>;

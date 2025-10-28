@@ -3,35 +3,47 @@ import WelcomeScreen from './components/welcome.jsx';
 import RoleSelectionScreen from './components/role-selection.jsx';
 import StudentLoginScreen from './components/login-estudent.jsx';
 import TeacherLoginScreen from './components/teacher-login.jsx';
+import StudentRegisterScreen from './components/register-student.jsx';
+import TeacherRegisterScreen from './components/register-teacher.jsx';
 import CourseCatalogScreen from './components/cuorse-catalogo.jsx';
 import LeaderboardScreen from './components/lead-board.jsx';
 import BadgesScreen from './components/badges.jsx';
 import ProfileScreen from './components/profile.jsx';
 
-
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [selectedRole, setSelectedRole] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
+  // Cuando se presiona el botón "Registrarse"
   const handleRegister = () => {
+    setIsRegistering(true);
     setCurrentScreen('role-selection');
   };
 
+  // Cuando se presiona el botón "Iniciar Sesión"
   const handleLogin = () => {
+    setIsRegistering(false);
     setCurrentScreen('role-selection');
   };
 
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
+
     if (role === 'student') {
-      setCurrentScreen('student-login');
+      setCurrentScreen(isRegistering ? 'student-register' : 'student-login');
     } else {
-      setCurrentScreen('teacher-login');
+      setCurrentScreen(isRegistering ? 'teacher-register' : 'teacher-login');
     }
   };
 
   const handleBack = () => {
-    if (currentScreen === 'student-login' || currentScreen === 'teacher-login') {
+    if (
+      currentScreen === 'student-login' ||
+      currentScreen === 'teacher-login' ||
+      currentScreen === 'student-register' ||
+      currentScreen === 'teacher-register'
+    ) {
       setCurrentScreen('role-selection');
     } else if (currentScreen === 'role-selection') {
       setCurrentScreen('welcome');
@@ -53,23 +65,43 @@ function App() {
       {currentScreen === 'welcome' && (
         <WelcomeScreen onRegister={handleRegister} onLogin={handleLogin} />
       )}
+
       {currentScreen === 'role-selection' && (
-        <RoleSelectionScreen onRoleSelect={handleRoleSelect} onBack={handleBack} />
+        <RoleSelectionScreen
+          onRoleSelect={handleRoleSelect}
+          onBack={handleBack}
+          isRegistration={isRegistering}
+        />
       )}
+
       {currentScreen === 'student-login' && (
-  <StudentLoginScreen
-    onBack={handleBack}
-    onLoginSuccess={handleLoginSuccess}
-    onNavigate={handleNavigate} // 🔹 Agregado
-  />
-)}
-{currentScreen === 'teacher-login' && (
-  <TeacherLoginScreen
-    onBack={handleBack}
-    onLoginSuccess={handleLoginSuccess}
-    onNavigate={handleNavigate} // 🔹 Agregado
-  />
-)}
+        <StudentLoginScreen
+          onBack={handleBack}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigate={handleNavigate}
+        />
+      )}
+      {currentScreen === 'teacher-login' && (
+        <TeacherLoginScreen
+          onBack={handleBack}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {currentScreen === 'student-register' && (
+        <StudentRegisterScreen
+          onBack={handleBack}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+      {currentScreen === 'teacher-register' && (
+        <TeacherRegisterScreen
+          onBack={handleBack}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+
       {currentScreen === 'catalog' && (
         <CourseCatalogScreen role={selectedRole} onNavigate={handleNavigate} />
       )}

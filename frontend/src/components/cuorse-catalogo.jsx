@@ -2,10 +2,11 @@ import React from "react";
 import { GraduationCap, Award, Trophy, Medal, User, Users, Star } from "lucide-react";
 import { useCursos } from "../hooks/useCursos";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
+import { useAuthContext } from "../context/AuthContext";
 
 export default function CourseCatalogScreen({ onNavigate }) {
-  const idUsuario = 1; // 🔸 Cambiar luego por el usuario logueado
-
+  const { user } = useAuthContext();
+  const idUsuario = user?.id_usuario;
   const { courses, errorCursos, loadingCursos } = useCursos();
   const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(idUsuario);
 

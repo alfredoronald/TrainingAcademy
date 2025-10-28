@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GraduationCap, User, BookOpen, HelpCircle } from 'lucide-react';
 
-export default function RoleSelectionScreen({ onRoleSelect, onBack }) {
+export default function RoleSelectionScreen({ onRoleSelect, onBack, isRegistration = false }) {
+  const [selectedRole, setSelectedRole] = useState(null);
+
+  const handleRoleClick = (role) => {
+    if (isRegistration) {
+      // 🔹 En registro, enviamos el rol y el modo registro
+      onRoleSelect(role, true);
+    } else {
+      // 🔹 En login, enviamos solo el rol
+      onRoleSelect(role, false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4 relative">
       <div className="text-center max-w-6xl w-full">
@@ -12,11 +24,11 @@ export default function RoleSelectionScreen({ onRoleSelect, onBack }) {
         </div>
 
         <h1 className="text-4xl font-semibold text-blue-600 mb-3">
-          ¿Cómo deseas iniciar sesión?
+          {isRegistration ? '¿Qué tipo de cuenta deseas crear?' : '¿Cómo deseas iniciar sesión?'}
         </h1>
 
         <p className="text-lg text-gray-600 mb-12">
-          Selecciona el tipo de cuenta
+          Selecciona tu rol
         </p>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-8">
@@ -26,15 +38,13 @@ export default function RoleSelectionScreen({ onRoleSelect, onBack }) {
                 <User className="w-14 h-14 text-blue-600" strokeWidth={1.5} />
               </div>
             </div>
-
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">Soy Alumno</h2>
             <p className="text-gray-600 mb-8">Quiero aprender y tomar cursos</p>
-
             <button
-              onClick={() => onRoleSelect('student')}
+              onClick={() => handleRoleClick('student')}
               className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Continuar como Alumno
+              {isRegistration ? 'Registrarme como Alumno' : 'Entrar como Alumno'}
             </button>
           </div>
 
@@ -44,15 +54,13 @@ export default function RoleSelectionScreen({ onRoleSelect, onBack }) {
                 <BookOpen className="w-14 h-14 text-green-600" strokeWidth={1.5} />
               </div>
             </div>
-
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">Soy Maestro</h2>
             <p className="text-gray-600 mb-8">Quiero enseñar y crear cursos</p>
-
             <button
-              onClick={() => onRoleSelect('teacher')}
+              onClick={() => handleRoleClick('teacher')}
               className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
             >
-              Continuar como Maestro
+              {isRegistration ? 'Registrarme como Maestro' : 'Entrar como Maestro'}
             </button>
           </div>
         </div>
