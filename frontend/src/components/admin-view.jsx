@@ -7,22 +7,36 @@ export default function AdminDashboard({ onNavigate }) {
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // 🔹 Cargar todos los cursos (sin filtrar por docente)
   useEffect(() => {
     fetchCourses();
   }, []);
 
   const fetchCourses = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
       const res = await fetch("http://localhost:3000/api/cursos");
-      if (!res.ok) throw new Error("Error al obtener los cursos");
+      
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: No se pudieron cargar los cursos`);
+      }
+      
       const data = await res.json();
       console.log("📚 Todos los cursos:", data);
-      setCourses(data);
+      
+      if (Array.isArray(data)) {
+        setCourses(data);
+      } else {
+        console.error("❌ La respuesta no es un array:", data);
+        setError(data.message || "Error: La respuesta del servidor no es válida");
+        setCourses([]);
+      }
     } catch (err) {
       console.error("❌ Error al cargar cursos:", err);
+      setError(err.message || "No se pudo conectar con el servidor");
       setCourses([]);
     } finally {
       setLoading(false);
@@ -31,36 +45,54 @@ export default function AdminDashboard({ onNavigate }) {
 
   const handleCreateCourse = async () => {
     const name = prompt("Nombre del nuevo curso:");
-    if (!name) return;
+    if (!name || name.trim() === "") {
+      alert("⚠️ El nombre del curso no puede estar vacío");
+      return;
+    }
 
     try {
       const res = await fetch("http://localhost:3000/api/cursos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: name }), // 🔹 No requiere id_docente
+        body: JSON.stringify({ nombre: name.trim() }),
       });
 
-      if (!res.ok) throw new Error("Error al crear el curso");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al crear el curso");
+      }
 
       const newCourse = await res.json();
-      setCourses([...courses, newCourse]);
-      alert("✅ Curso añadido correctamente");
+      
+      if (newCourse && newCourse.id_curso) {
+        setCourses([...courses, newCourse]);
+        alert("✅ Curso añadido correctamente");
+      } else {
+        throw new Error("El servidor no devolvió un curso válido");
+      }
     } catch (err) {
-      alert("Error creando curso");
+      alert("❌ Error creando curso: " + err.message);
       console.error(err);
     }
   };
 
-  const handleDeleteCourse = async (id) => {
-    if (!confirm("¿Estás seguro de eliminar este curso?")) return;
+  const handleDeleteCourse = async (id, nombre) => {
+    if (!confirm(`¿Estás seguro de eliminar el curso "${nombre}"?`)) return;
 
     try {
-      await fetch(`http://localhost:3000/api/cursos/${id}`, {
+      const res = await fetch(`http://localhost:3000/api/cursos/${id}`, {
         method: "DELETE",
       });
-      setCourses(courses.filter((c) => c.id_curso !== id));
+      
+      if (res.ok) {
+        setCourses(courses.filter((c) => c.id_curso !== id));
+        alert("✅ Curso eliminado correctamente");
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al eliminar el curso");
+      }
     } catch (err) {
-      alert("Error eliminando curso");
+      alert("❌ Error eliminando curso: " + err.message);
       console.error(err);
     }
   };
@@ -75,7 +107,6 @@ export default function AdminDashboard({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
       <header className="bg-blue-800 text-white border-b border-blue-900 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -109,7 +140,6 @@ export default function AdminDashboard({ onNavigate }) {
         </div>
       </header>
 
-      {/* MAIN */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-10">
           <h1 className="text-4xl font-semibold text-blue-800 mb-3">
@@ -120,23 +150,45 @@ export default function AdminDashboard({ onNavigate }) {
           </p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-3">
+            <span className="text-xl">⚠️</span>
+            <div>
+              <p className="font-semibold mb-1">Error al cargar cursos</p>
+              <p className="text-sm">{error}</p>
+              <button
+                onClick={fetchCourses}
+                className="mt-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6">
           {loading ? (
-            <p className="text-gray-600">Cargando cursos...</p>
+            <div className="col-span-2 text-center py-8">
+              <p className="text-gray-600 text-lg">Cargando cursos...</p>
+            </div>
           ) : courses.length === 0 ? (
-            <p className="text-gray-600">No hay cursos aún.</p>
+            <div className="col-span-2 text-center py-8">
+              <p className="text-gray-600 text-lg">
+                {error ? "No se pudieron cargar los cursos." : "No hay cursos aún. ¡Crea el primero!"}
+              </p>
+            </div>
           ) : (
             courses.map((course) => (
               <div
                 key={course.id_curso}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex justify-between items-center"
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex justify-between items-center hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3">
                   <Book className="w-6 h-6 text-blue-800" />
                   <span className="font-medium text-gray-900">{course.nombre}</span>
                 </div>
                 <button
-                  onClick={() => handleDeleteCourse(course.id_curso)}
+                  onClick={() => handleDeleteCourse(course.id_curso, course.nombre)}
                   className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />

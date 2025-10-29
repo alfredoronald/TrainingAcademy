@@ -12,7 +12,7 @@ import ProfileScreen from './components/profile.jsx';
 import TeacherDashboardView from './components/teacher-view.jsx';
 import TeacherProfile from './components/teacher-profile.jsx';
 import AdminLoginScreen from './components/login-admin.jsx';
-import AdminView from './components/admin-view.jsx'; // ✅ Nueva vista del administrador
+import AdminDashboard from './components/admin-view.jsx';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -30,7 +30,7 @@ function App() {
     setCurrentScreen('role-selection');
   };
 
-  // ✅ Nuevo: ir al login del admin
+  // ✅ Ir al login del admin
   const handleAdminLogin = () => {
     setCurrentScreen('admin-login');
   };
@@ -62,21 +62,31 @@ function App() {
     }
   };
 
+  // ✅ Login exitoso - redirige según el rol
   const handleLoginSuccess = (role) => {
     if (role === 'admin') {
-      setCurrentScreen('admin-view'); // ✅ Navegar al panel del administrador
+      setCurrentScreen('admin-dashboard');
+    } else if (role === 'teacher') {
+      setCurrentScreen('teacher-dashboard');
     } else {
-      setCurrentScreen('catalog');
+      setCurrentScreen('catalog'); // Para estudiantes
     }
   };
 
+  // ✅ Navegación entre pantallas
   const handleNavigate = (screen) => {
     setCurrentScreen(screen);
   };
 
+  // ✅ Cerrar sesión
+  const handleLogout = () => {
+    setCurrentScreen('welcome');
+    setSelectedRole(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* 🔹 Pantalla principal */}
+      {/* 🔹 PANTALLA DE BIENVENIDA */}
       {currentScreen === 'welcome' && (
         <WelcomeScreen
           onRegister={handleRegister}
@@ -85,7 +95,7 @@ function App() {
         />
       )}
 
-      {/* 🔹 Selección de rol */}
+      {/* 🔹 SELECCIÓN DE ROL (Estudiante o Docente) */}
       {currentScreen === 'role-selection' && (
         <RoleSelectionScreen
           onRoleSelect={handleRoleSelect}
@@ -94,7 +104,7 @@ function App() {
         />
       )}
 
-      {/* 🔹 Login y registro */}
+      {/* 🔹 LOGIN - ESTUDIANTE */}
       {currentScreen === 'student-login' && (
         <StudentLoginScreen
           onBack={handleBack}
@@ -103,6 +113,7 @@ function App() {
         />
       )}
 
+      {/* 🔹 LOGIN - DOCENTE */}
       {currentScreen === 'teacher-login' && (
         <TeacherLoginScreen
           onBack={handleBack}
@@ -111,6 +122,16 @@ function App() {
         />
       )}
 
+      {/* 🔹 LOGIN - ADMINISTRADOR */}
+      {currentScreen === 'admin-login' && (
+        <AdminLoginScreen
+          onBack={handleBack}
+          onLoginSuccess={() => handleLoginSuccess('admin')}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {/* 🔹 REGISTRO - ESTUDIANTE */}
       {currentScreen === 'student-register' && (
         <StudentRegisterScreen
           onBack={handleBack}
@@ -118,6 +139,7 @@ function App() {
         />
       )}
 
+      {/* 🔹 REGISTRO - DOCENTE */}
       {currentScreen === 'teacher-register' && (
         <TeacherRegisterScreen
           onBack={handleBack}
@@ -125,44 +147,43 @@ function App() {
         />
       )}
 
-      {/* 🔹 Login de administrador */}
-      {currentScreen === 'admin-login' && (
-        <AdminLoginScreen
-          onBack={handleBack}
-          onLoginSuccess={() => handleLoginSuccess('admin')} // ✅ Ir al admin-view tras login
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {/* 🔹 Pantallas internas */}
+      {/* 🔹 CATÁLOGO DE CURSOS (para estudiantes) */}
       {currentScreen === 'catalog' && (
         <CourseCatalogScreen role={selectedRole} onNavigate={handleNavigate} />
       )}
+
+      {/* 🔹 TABLA DE CLASIFICACIÓN */}
       {currentScreen === 'leaderboard' && (
         <LeaderboardScreen onNavigate={handleNavigate} />
       )}
-      {currentScreen === 'badges' && <BadgesScreen onNavigate={handleNavigate} />}
-      {currentScreen === 'profile' && <ProfileScreen onNavigate={handleNavigate} />}
-      {currentScreen === 'teacher-profile' && (
-        <TeacherProfile onNavigate={handleNavigate} />
+
+      {/* 🔹 INSIGNIAS */}
+      {currentScreen === 'badges' && (
+        <BadgesScreen onNavigate={handleNavigate} />
       )}
+
+      {/* 🔹 PERFIL GENERAL */}
+      {currentScreen === 'profile' && (
+        <ProfileScreen onNavigate={handleNavigate} />
+      )}
+
+      {/* 🔹 DASHBOARD - DOCENTE */}
       {currentScreen === 'teacher-dashboard' && (
         <TeacherDashboardView
-          onLogout={() => {
-            setCurrentScreen('welcome');
-            setSelectedRole(null);
-          }}
+          onLogout={handleLogout}
           onNavigate={handleNavigate}
         />
       )}
 
-      {/* 🔹 Nueva vista del administrador */}
-      {currentScreen === 'admin-view' && (
-        <AdminView
-          onLogout={() => {
-            setCurrentScreen('welcome');
-            setSelectedRole(null);
-          }}
+      {/* 🔹 PERFIL - DOCENTE */}
+      {currentScreen === 'teacher-profile' && (
+        <TeacherProfile onNavigate={handleNavigate} />
+      )}
+
+      {/* 🔹 DASHBOARD - ADMINISTRADOR */}
+      {currentScreen === 'admin-dashboard' && (
+        <AdminDashboard
+          onLogout={handleLogout}
           onNavigate={handleNavigate}
         />
       )}
