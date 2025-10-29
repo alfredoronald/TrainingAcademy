@@ -14,23 +14,59 @@ export default function TeacherProfile({ onNavigate }) {
 
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [error, setError] = useState(null); // 🔹 NUEVO: Para mostrar errores
 
   // 🔹 Cargar cursos del docente
   useEffect(() => {
     if (!idUsuario) return;
 
     setLoadingCourses(true);
-    fetch(`http://localhost:3000/api/cursos`)
+    setError(null); // 🔹 Limpiar errores previos
+    
+    fetch(`http://localhost:3000/api/cursos?docente=${idUsuario}`) // 🔹 CORREGIDO: Agregué el filtro por docente
       .then((res) => res.json())
       .then((data) => {
-        setCourses(data || []);
+        console.log("📚 Cursos del docente en perfil:", data);
+        
+        // 🔹 VALIDACIÓN CRÍTICA: Verificar que sea un array
+        if (Array.isArray(data)) {
+          setCourses(data);
+        } else {
+          // Si el backend retorna un error, mostrarlo
+          console.error("❌ La respuesta no es un array:", data);
+          setError(data.message || "Error al cargar cursos");
+          setCourses([]);
+        }
       })
       .catch((err) => {
         console.error("Error cargando cursos del docente:", err);
+        setError("No se pudo conectar con el servidor");
         setCourses([]);
       })
       .finally(() => setLoadingCourses(false));
   }, [idUsuario]);
+
+  const handleDeleteCourse = async (id, nombre) => {
+    if (!confirm(`¿Estás seguro de eliminar el curso "${nombre}"?`)) return;
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/cursos/${id}`, {
+        method: "DELETE",
+      });
+
+      // 🔹 VALIDACIÓN: Verificar que se eliminó correctamente
+      if (res.ok) {
+        setCourses(courses.filter((c) => c.id_curso !== id));
+        alert("Curso eliminado correctamente");
+      } else {
+        const errorData = await res.json();
+        alert("Error eliminando curso: " + (errorData.message || "Error desconocido"));
+      }
+    } catch (err) {
+      alert("Error eliminando curso");
+      console.error(err);
+    }
+  };
 
   if (!user) {
     return (
@@ -76,6 +112,13 @@ export default function TeacherProfile({ onNavigate }) {
             Gestiona tu información y revisa los cursos que has creado
           </p>
         </div>
+
+        {/* 🔹 MOSTRAR ERROR SI EXISTE */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            ⚠️ {error}
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Columna principal */}
@@ -141,7 +184,9 @@ export default function TeacherProfile({ onNavigate }) {
               {loadingCourses ? (
                 <p className="text-gray-600">Cargando cursos...</p>
               ) : courses.length === 0 ? (
-                <p className="text-gray-600">No has creado cursos aún.</p>
+                <p className="text-gray-600">
+                  {error ? "No se pudieron cargar los cursos." : "No has creado cursos aún."}
+                </p>
               ) : (
                 <ul className="space-y-2">
                   {courses.map((course) => (
@@ -149,9 +194,9 @@ export default function TeacherProfile({ onNavigate }) {
                       key={course.id_curso}
                       className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
                     >
-                      <span>{course.nombre}</span>
+                      <span className="font-medium text-gray-900">{course.nombre}</span>
                       <button
-                        onClick={() => alert("Eliminar curso: " + course.nombre)}
+                        onClick={() => handleDeleteCourse(course.id_curso, course.nombre)}
                         className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
                       >
                         Eliminar

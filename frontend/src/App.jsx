@@ -11,7 +11,8 @@ import BadgesScreen from './components/badges.jsx';
 import ProfileScreen from './components/profile.jsx';
 import TeacherDashboardView from './components/teacher-view.jsx';
 import TeacherProfile from './components/teacher-profile.jsx';
-import AdminLoginScreen from './components/login-admin.jsx'; // ✅ Importamos el nuevo login admin
+import AdminLoginScreen from './components/login-admin.jsx';
+import AdminView from './components/admin-view.jsx'; // ✅ Nueva vista del administrador
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -61,8 +62,12 @@ function App() {
     }
   };
 
-  const handleLoginSuccess = () => {
-    setCurrentScreen('catalog');
+  const handleLoginSuccess = (role) => {
+    if (role === 'admin') {
+      setCurrentScreen('admin-view'); // ✅ Navegar al panel del administrador
+    } else {
+      setCurrentScreen('catalog');
+    }
   };
 
   const handleNavigate = (screen) => {
@@ -76,7 +81,7 @@ function App() {
         <WelcomeScreen
           onRegister={handleRegister}
           onLogin={handleLogin}
-          onAdminLogin={handleAdminLogin} // ✅ añadimos la prop
+          onAdminLogin={handleAdminLogin}
         />
       )}
 
@@ -93,7 +98,7 @@ function App() {
       {currentScreen === 'student-login' && (
         <StudentLoginScreen
           onBack={handleBack}
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={() => handleLoginSuccess('student')}
           onNavigate={handleNavigate}
         />
       )}
@@ -101,7 +106,7 @@ function App() {
       {currentScreen === 'teacher-login' && (
         <TeacherLoginScreen
           onBack={handleBack}
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={() => handleLoginSuccess('teacher')}
           onNavigate={handleNavigate}
         />
       )}
@@ -109,22 +114,22 @@ function App() {
       {currentScreen === 'student-register' && (
         <StudentRegisterScreen
           onBack={handleBack}
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={() => handleLoginSuccess('student')}
         />
       )}
 
       {currentScreen === 'teacher-register' && (
         <TeacherRegisterScreen
           onBack={handleBack}
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={() => handleLoginSuccess('teacher')}
         />
       )}
 
-      {/* 🔹 Nuevo: Login de administrador */}
+      {/* 🔹 Login de administrador */}
       {currentScreen === 'admin-login' && (
         <AdminLoginScreen
           onBack={handleBack}
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={() => handleLoginSuccess('admin')} // ✅ Ir al admin-view tras login
           onNavigate={handleNavigate}
         />
       )}
@@ -136,17 +141,24 @@ function App() {
       {currentScreen === 'leaderboard' && (
         <LeaderboardScreen onNavigate={handleNavigate} />
       )}
-      {currentScreen === 'badges' && (
-        <BadgesScreen onNavigate={handleNavigate} />
-      )}
-      {currentScreen === 'profile' && (
-        <ProfileScreen onNavigate={handleNavigate} />
-      )}
+      {currentScreen === 'badges' && <BadgesScreen onNavigate={handleNavigate} />}
+      {currentScreen === 'profile' && <ProfileScreen onNavigate={handleNavigate} />}
       {currentScreen === 'teacher-profile' && (
         <TeacherProfile onNavigate={handleNavigate} />
       )}
       {currentScreen === 'teacher-dashboard' && (
         <TeacherDashboardView
+          onLogout={() => {
+            setCurrentScreen('welcome');
+            setSelectedRole(null);
+          }}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {/* 🔹 Nueva vista del administrador */}
+      {currentScreen === 'admin-view' && (
+        <AdminView
           onLogout={() => {
             setCurrentScreen('welcome');
             setSelectedRole(null);

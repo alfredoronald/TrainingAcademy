@@ -8,20 +8,33 @@ export default function TeacherDashboard({ onNavigate }) {
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null); // 🔹 NUEVO: Para mostrar errores
 
   // 🔹 Cargar cursos del docente
   useEffect(() => {
     if (!idUsuario) return;
 
     setLoading(true);
+    setError(null); // 🔹 Limpiar errores previos
+    
     fetch(`http://localhost:3000/api/cursos?docente=${idUsuario}`)
       .then((res) => res.json())
       .then((data) => {
         console.log("📚 Cursos del docente:", data);
-        setCourses(data);
+        
+        // 🔹 VALIDACIÓN CRÍTICA: Verificar que sea un array
+        if (Array.isArray(data)) {
+          setCourses(data);
+        } else {
+          // Si el backend retorna un error, mostrarlo
+          console.error("❌ La respuesta no es un array:", data);
+          setError(data.message || "Error al cargar cursos");
+          setCourses([]);
+        }
       })
       .catch((err) => {
         console.error("❌ Error al cargar cursos:", err);
+        setError("No se pudo conectar con el servidor");
         setCourses([]);
       })
       .finally(() => setLoading(false));
@@ -38,7 +51,13 @@ export default function TeacherDashboard({ onNavigate }) {
         body: JSON.stringify({ nombre: name, id_docente: idUsuario }),
       });
       const newCourse = await res.json();
-      setCourses([...courses, newCourse]);
+      
+      // 🔹 VALIDACIÓN: Verificar que se creó correctamente
+      if (res.ok && newCourse.id_curso) {
+        setCourses([...courses, newCourse]);
+      } else {
+        alert("Error creando curso: " + (newCourse.message || "Error desconocido"));
+      }
     } catch (err) {
       alert("Error creando curso");
       console.error(err);
@@ -49,10 +68,16 @@ export default function TeacherDashboard({ onNavigate }) {
     if (!confirm("¿Estás seguro de eliminar este curso?")) return;
 
     try {
-      await fetch(`http://localhost:3000/api/cursos/${id}`, {
+      const res = await fetch(`http://localhost:3000/api/cursos/${id}`, {
         method: "DELETE",
       });
-      setCourses(courses.filter((c) => c.id_curso !== id));
+      
+      // 🔹 VALIDACIÓN: Verificar que se eliminó correctamente
+      if (res.ok) {
+        setCourses(courses.filter((c) => c.id_curso !== id));
+      } else {
+        alert("Error eliminando curso");
+      }
     } catch (err) {
       alert("Error eliminando curso");
       console.error(err);
@@ -114,11 +139,20 @@ export default function TeacherDashboard({ onNavigate }) {
           </p>
         </div>
 
+        {/* 🔹 MOSTRAR ERROR SI EXISTE */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            ⚠️ {error}
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6">
           {loading ? (
             <p className="text-gray-600">Cargando cursos...</p>
           ) : courses.length === 0 ? (
-            <p className="text-gray-600">No tienes cursos aún. ¡Crea uno!</p>
+            <p className="text-gray-600">
+              {error ? "No se pudieron cargar los cursos." : "No tienes cursos aún. ¡Crea uno!"}
+            </p>
           ) : (
             courses.map((course) => (
               <div

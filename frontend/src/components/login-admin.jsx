@@ -24,6 +24,7 @@ export default function StudentLoginScreen({ onBack, onNavigate }) {
 
       if (data.roles.includes("Estudiante")) onNavigate("catalog");
       else if (data.roles.includes("Docente")) onNavigate("teacher-dashboard");
+      else if (data.roles.includes("Administrador")) onNavigate("admin-dashboard");
       else alert("No tienes permisos válidos");
     } catch (err) {
       alert(err.message);
