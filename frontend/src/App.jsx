@@ -9,19 +9,18 @@ import CourseCatalogScreen from './components/cuorse-catalogo.jsx';
 import LeaderboardScreen from './components/lead-board.jsx';
 import BadgesScreen from './components/badges.jsx';
 import ProfileScreen from './components/profile.jsx';
-
+import TeacherDashboardView from './components/teacher-view.jsx';
+import TeacherProfile from './components/teacher-profile.jsx';
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [selectedRole, setSelectedRole] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // Cuando se presiona el botón "Registrarse"
   const handleRegister = () => {
     setIsRegistering(true);
     setCurrentScreen('role-selection');
   };
 
-  // Cuando se presiona el botón "Iniciar Sesión"
   const handleLogin = () => {
     setIsRegistering(false);
     setCurrentScreen('role-selection');
@@ -36,7 +35,7 @@ function App() {
       setCurrentScreen(isRegistering ? 'teacher-register' : 'teacher-login');
     }
   };
-
+  
   const handleBack = () => {
     if (
       currentScreen === 'student-login' ||
@@ -114,6 +113,18 @@ function App() {
       {currentScreen === 'profile' && (
         <ProfileScreen onNavigate={handleNavigate} />
       )}
+      {currentScreen === 'teacher-profile' && (
+        <TeacherProfile onNavigate={handleNavigate} />
+      )}
+      {currentScreen === 'teacher-dashboard' && (
+  <TeacherDashboardView
+    onLogout={() => {
+      setCurrentScreen('welcome');
+      setSelectedRole(null);
+    }}
+    onNavigate={handleNavigate} // ← agregamos esto
+  />
+)}
     </div>
   );
 }

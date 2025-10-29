@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UsuarioModule } from '../usuario/usuario.module'; // si usas usuarios en Auth
+import { UsuarioModule } from '../modules/usuario/usuario.module'; // si usas usuarios en Auth
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Usuario } from '../usuario/usuario.entity';
-import { DetalleRol } from '../detalle-rol/detalle-rol.entity';
+import { Usuario } from '../modules//usuario/usuario.entity';
+import { DetalleRol } from '../modules/detalle-rol/detalle-rol.entity';
 
 @Module({
   imports: [

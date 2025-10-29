@@ -23,7 +23,7 @@ export default function TeacherLoginScreen({ onBack, onNavigate }) {
 
       if (tieneRolDocente) {
         setUser(data); // ✅ Guarda los datos del usuario logueado en el contexto
-        onNavigate("catalog");
+        onNavigate("teacher-dashboard");
       } else {
         alert("⚠️ No tienes permisos de docente.");
       }
