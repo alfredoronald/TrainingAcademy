@@ -64,9 +64,9 @@ import { AuthModule } from './auth/auth.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
+      port: parseInt(process.env.DB_PORT || '5433', 10),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || '13042003',
+      password: process.env.DB_PASS || 'password',
       database: process.env.DB_NAME || 'training_academy',
       entities: [
         Usuario, Rol, Permiso, DetalleRol, PermisoRol, Curso, HorarioCurso, Asistencia, TipoCurso,
