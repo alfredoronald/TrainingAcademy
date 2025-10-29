@@ -11,11 +11,14 @@ import BadgesScreen from './components/badges.jsx';
 import ProfileScreen from './components/profile.jsx';
 import TeacherDashboardView from './components/teacher-view.jsx';
 import TeacherProfile from './components/teacher-profile.jsx';
+import AdminLoginScreen from './components/login-admin.jsx'; // ✅ Importamos el nuevo login admin
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [selectedRole, setSelectedRole] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // ✅ Acciones de los botones principales
   const handleRegister = () => {
     setIsRegistering(true);
     setCurrentScreen('role-selection');
@@ -26,24 +29,31 @@ function App() {
     setCurrentScreen('role-selection');
   };
 
+  // ✅ Nuevo: ir al login del admin
+  const handleAdminLogin = () => {
+    setCurrentScreen('admin-login');
+  };
+
+  // ✅ Selección de rol
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
-
     if (role === 'student') {
       setCurrentScreen(isRegistering ? 'student-register' : 'student-login');
     } else {
       setCurrentScreen(isRegistering ? 'teacher-register' : 'teacher-login');
     }
   };
-  
+
+  // ✅ Botón "Volver"
   const handleBack = () => {
     if (
       currentScreen === 'student-login' ||
       currentScreen === 'teacher-login' ||
       currentScreen === 'student-register' ||
-      currentScreen === 'teacher-register'
+      currentScreen === 'teacher-register' ||
+      currentScreen === 'admin-login'
     ) {
-      setCurrentScreen('role-selection');
+      setCurrentScreen('welcome');
     } else if (currentScreen === 'role-selection') {
       setCurrentScreen('welcome');
     } else if (currentScreen === 'catalog') {
@@ -61,10 +71,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* 🔹 Pantalla principal */}
       {currentScreen === 'welcome' && (
-        <WelcomeScreen onRegister={handleRegister} onLogin={handleLogin} />
+        <WelcomeScreen
+          onRegister={handleRegister}
+          onLogin={handleLogin}
+          onAdminLogin={handleAdminLogin} // ✅ añadimos la prop
+        />
       )}
 
+      {/* 🔹 Selección de rol */}
       {currentScreen === 'role-selection' && (
         <RoleSelectionScreen
           onRoleSelect={handleRoleSelect}
@@ -73,6 +89,7 @@ function App() {
         />
       )}
 
+      {/* 🔹 Login y registro */}
       {currentScreen === 'student-login' && (
         <StudentLoginScreen
           onBack={handleBack}
@@ -80,6 +97,7 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
+
       {currentScreen === 'teacher-login' && (
         <TeacherLoginScreen
           onBack={handleBack}
@@ -94,6 +112,7 @@ function App() {
           onLoginSuccess={handleLoginSuccess}
         />
       )}
+
       {currentScreen === 'teacher-register' && (
         <TeacherRegisterScreen
           onBack={handleBack}
@@ -101,6 +120,16 @@ function App() {
         />
       )}
 
+      {/* 🔹 Nuevo: Login de administrador */}
+      {currentScreen === 'admin-login' && (
+        <AdminLoginScreen
+          onBack={handleBack}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {/* 🔹 Pantallas internas */}
       {currentScreen === 'catalog' && (
         <CourseCatalogScreen role={selectedRole} onNavigate={handleNavigate} />
       )}
@@ -117,14 +146,14 @@ function App() {
         <TeacherProfile onNavigate={handleNavigate} />
       )}
       {currentScreen === 'teacher-dashboard' && (
-  <TeacherDashboardView
-    onLogout={() => {
-      setCurrentScreen('welcome');
-      setSelectedRole(null);
-    }}
-    onNavigate={handleNavigate} // ← agregamos esto
-  />
-)}
+        <TeacherDashboardView
+          onLogout={() => {
+            setCurrentScreen('welcome');
+            setSelectedRole(null);
+          }}
+          onNavigate={handleNavigate}
+        />
+      )}
     </div>
   );
 }

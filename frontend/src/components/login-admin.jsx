@@ -41,7 +41,7 @@ export default function StudentLoginScreen({ onBack, onNavigate }) {
 
         <div className="flex justify-center mb-6">
           <span className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-full">
-            Alumno
+            Administrador
           </span>
         </div>
 
@@ -50,7 +50,7 @@ export default function StudentLoginScreen({ onBack, onNavigate }) {
         </h1>
 
         <p className="text-gray-600 text-center mb-4">
-          Accede a tu cuenta de Training Academy como alumno
+          Accede como administrador
         </p>
 
         {errorAuth && <p className="text-red-600 text-center mb-4">{errorAuth}</p>}

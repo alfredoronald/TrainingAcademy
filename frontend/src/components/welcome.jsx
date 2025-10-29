@@ -1,8 +1,7 @@
 import React from 'react';
 import { GraduationCap, HelpCircle } from 'lucide-react';
 
-
-export default function Welcome({ onRegister, onLogin }) {
+export default function Welcome({ onRegister, onLogin, onAdminLogin }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4 relative">
       <div className="text-center max-w-2xl">
@@ -20,7 +19,7 @@ export default function Welcome({ onRegister, onLogin }) {
           Aprende nuevas habilidades con los mejores cursos en línea
         </p>
 
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={onRegister}
             className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
@@ -34,6 +33,14 @@ export default function Welcome({ onRegister, onLogin }) {
           >
             Iniciar Sesión
           </button>
+
+          {/* 🔹 Nuevo botón para login admin */}
+          <button
+            onClick={onAdminLogin}
+            className="px-8 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-md"
+          >
+            Iniciar como Administrador
+          </button>
         </div>
       </div>
 
@@ -43,3 +50,4 @@ export default function Welcome({ onRegister, onLogin }) {
     </div>
   );
 }
+
