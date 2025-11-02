@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { Usuario } from '../usuario/usuario.entity';
 import { HorarioCurso } from '../horario-curso/horario-curso.entity';
 import { Inscripcion } from '../inscripcion/inscripcion.entity';
@@ -9,9 +16,15 @@ export class Curso {
   @PrimaryGeneratedColumn({ name: 'id_curso' })
   id_curso: number;
 
-  @ManyToOne(() => Usuario)
-  @JoinColumn({ name: 'id_usuario' })
-  usuario: Usuario;
+  // 🔹 Relación con el docente (Usuario)
+  // Muchos cursos pueden ser dictados por un mismo docente.
+  @ManyToOne(() => Usuario, (usuario) => usuario.cursos_dictados, {
+    nullable: false, // cada curso debe tener un docente
+    onDelete: 'CASCADE', // si se elimina el docente, también se eliminan sus cursos
+    onUpdate: 'CASCADE', // actualiza en cascada si cambia el id del docente
+  })
+  @JoinColumn({ name: 'id_docente' })
+  docente: Usuario;
 
   @Column({ length: 200 })
   nombre_curso: string;
@@ -19,7 +32,12 @@ export class Curso {
   @Column({ type: 'text', nullable: true })
   descripcion: string;
 
-  @Column({ type: 'varchar', length: 20, name: 'estado_disponibilidad', default: 'ACTIVO' })
+  @Column({
+    type: 'enum',
+    enum: ['ACTIVO', 'INACTIVO'],
+    name: 'estado_disponibilidad',
+    default: 'ACTIVO',
+  })
   estado_disponibilidad: string;
 
   @Column({ type: 'int', nullable: true })
@@ -34,12 +52,13 @@ export class Curso {
   @Column({ type: 'int', nullable: true })
   cupos: number;
 
-  @OneToMany(() => HorarioCurso, h => h.curso)
+  // 🔹 Relaciones con otras entidades
+  @OneToMany(() => HorarioCurso, (h) => h.curso)
   horarios: HorarioCurso[];
 
-  @OneToMany(() => Inscripcion, i => i.curso)
+  @OneToMany(() => Inscripcion, (i) => i.curso)
   inscripciones: Inscripcion[];
 
-  @OneToMany(() => Modulo, m => m.curso)
+  @OneToMany(() => Modulo, (m) => m.curso)
   modulos: Modulo[];
 }
