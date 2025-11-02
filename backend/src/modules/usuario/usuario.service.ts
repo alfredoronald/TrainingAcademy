@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './usuario.entity';
+import { Rol } from '../rol/rol.entity';
+import { DetalleRol } from '../detalle-rol/detalle-rol.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,15 +11,43 @@ export class UsuarioService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+
+    @InjectRepository(Rol)
+    private readonly rolRepository: Repository<Rol>,
+
+    @InjectRepository(DetalleRol)
+    private readonly detalleRolRepository: Repository<DetalleRol>,
   ) {}
 
-  // Crear usuario con hash de contraseña
+  // Crear usuario con rol por defecto (Estudiante)
   async create(data: Partial<Usuario>) {
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
     }
+
+    // 1️⃣ Crear el usuario
     const usuario = this.usuarioRepository.create(data);
-    return this.usuarioRepository.save(usuario);
+    const usuarioGuardado = await this.usuarioRepository.save(usuario);
+
+    // 2️⃣ Buscar el rol por defecto "Estudiante"
+    const rolPorDefecto = await this.rolRepository.findOne({
+      where: { nombre_rol: 'Estudiante' },
+    });
+
+    // 3️⃣ Crear la relación detalleRol automáticamente
+    if (rolPorDefecto) {
+      const detalleRol = this.detalleRolRepository.create({
+        usuario: usuarioGuardado,
+        rol: rolPorDefecto,
+      });
+      await this.detalleRolRepository.save(detalleRol);
+    }
+
+    // 4️⃣ Devolver el usuario completo con relaciones
+    return this.usuarioRepository.findOne({
+      where: { id_usuario: usuarioGuardado.id_usuario },
+      relations: ['detalleRoles', 'detalleRoles.rol', 'detalleRoles.rol.permisos'],
+    });
   }
 
   // Obtener todos los usuarios
@@ -73,7 +103,7 @@ export class UsuarioService {
 
     if (!valid) return null;
 
-    // Validación de permisos
+    // Validación de permisos (si aplica)
     if (permisosRequeridos.length > 0 && !this.tienePermiso(usuario, permisosRequeridos)) {
       return null;
     }
