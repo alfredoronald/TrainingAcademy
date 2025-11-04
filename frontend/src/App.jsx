@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { AuthProvider } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import WelcomeScreen from './components/welcome.jsx';
 import RoleSelectionScreen from './components/role-selection.jsx';
 import StudentLoginScreen from './components/login-estudent.jsx';
@@ -13,11 +15,16 @@ import TeacherDashboardView from './components/teacher-view.jsx';
 import TeacherProfile from './components/teacher-profile.jsx';
 import AdminLoginScreen from './components/login-admin.jsx';
 import AdminDashboard from './components/admin-view.jsx';
+import MyCoursesScreen from './components/MyCoursesScreen';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [selectedRole, setSelectedRole] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // 🆕 Debug
+  console.log('Current Screen:', currentScreen);
+  console.log('Selected Role:', selectedRole);
 
   // ✅ Acciones de los botones principales
   const handleRegister = () => {
@@ -59,11 +66,15 @@ function App() {
       setCurrentScreen('welcome');
     } else if (currentScreen === 'catalog') {
       setCurrentScreen('welcome');
+    } else if (currentScreen === 'my-courses') {
+      setCurrentScreen('catalog');
     }
   };
 
   // ✅ Login exitoso - redirige según el rol
-  const handleLoginSuccess = (role) => {
+  const handleLoginSuccess = (role, userData = {}) => {
+    console.log('Login exitoso para:', role, userData);
+    
     if (role === 'admin') {
       setCurrentScreen('admin-dashboard');
     } else if (role === 'teacher') {
@@ -74,120 +85,166 @@ function App() {
   };
 
   // ✅ Navegación entre pantallas
-  const handleNavigate = (screen) => {
-    setCurrentScreen(screen);
+  const handleNavigate = (screen, params = {}) => {
+    console.log('Navegando a:', screen, 'con parámetros:', params);
+    
+    // Manejar navegación específica para estudiantes
+    if (screen === 'my-courses' && selectedRole === 'student') {
+      setCurrentScreen('my-courses');
+    } else if (screen === 'catalog' && selectedRole === 'student') {
+      setCurrentScreen('catalog');
+    } else {
+      setCurrentScreen(screen);
+    }
   };
 
   // ✅ Cerrar sesión
   const handleLogout = () => {
+    console.log('Cerrando sesión...');
     setCurrentScreen('welcome');
     setSelectedRole(null);
+    setIsRegistering(false);
+  };
+
+  // 🆕 Función para renderizar cada pantalla con manejo de navegación consistente
+  const renderScreen = () => {
+    const commonProps = {
+      onNavigate: handleNavigate,
+      onBack: handleBack,
+      onLogout: handleLogout
+    };
+
+    switch (currentScreen) {
+      case 'welcome':
+        return (
+          <WelcomeScreen
+            onRegister={handleRegister}
+            onLogin={handleLogin}
+            onAdminLogin={handleAdminLogin}
+            {...commonProps}
+          />
+        );
+
+      case 'role-selection':
+        return (
+          <RoleSelectionScreen
+            onRoleSelect={handleRoleSelect}
+            isRegistration={isRegistering}
+            {...commonProps}
+          />
+        );
+
+      case 'student-login':
+        return (
+          <StudentLoginScreen
+            onLoginSuccess={() => handleLoginSuccess('student')}
+            {...commonProps}
+          />
+        );
+
+      case 'teacher-login':
+        return (
+          <TeacherLoginScreen
+            onLoginSuccess={() => handleLoginSuccess('teacher')}
+            {...commonProps}
+          />
+        );
+
+      case 'admin-login':
+        return (
+          <AdminLoginScreen
+            onLoginSuccess={() => handleLoginSuccess('admin')}
+            {...commonProps}
+          />
+        );
+
+      case 'student-register':
+        return (
+          <StudentRegisterScreen
+            onLoginSuccess={() => handleLoginSuccess('student')}
+            {...commonProps}
+          />
+        );
+
+      case 'teacher-register':
+        return (
+          <TeacherRegisterScreen
+            onLoginSuccess={() => handleLoginSuccess('teacher')}
+            {...commonProps}
+          />
+        );
+
+      case 'catalog':
+        return (
+          <CourseCatalogScreen 
+            role={selectedRole} 
+            {...commonProps}
+          />
+        );
+
+      case 'my-courses':
+        return (
+          <MyCoursesScreen {...commonProps} />
+        );
+
+      case 'leaderboard':
+        return (
+          <LeaderboardScreen {...commonProps} />
+        );
+
+      case 'badges':
+        return (
+          <BadgesScreen {...commonProps} />
+        );
+
+      case 'profile':
+        return (
+          <ProfileScreen {...commonProps} />
+        );
+
+      case 'teacher-dashboard':
+        return (
+          <TeacherDashboardView {...commonProps} />
+        );
+
+      case 'teacher-profile':
+        return (
+          <TeacherProfile {...commonProps} />
+        );
+
+      case 'admin-dashboard':
+        return (
+          <AdminDashboard {...commonProps} />
+        );
+
+      default:
+        // Pantalla por defecto si no se reconoce la pantalla actual
+        console.warn('Pantalla no reconocida:', currentScreen);
+        return (
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Pantalla no encontrada</h1>
+              <p className="text-gray-600 mb-4">La pantalla "{currentScreen}" no existe.</p>
+              <button
+                onClick={() => setCurrentScreen('welcome')}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              >
+                Volver al Inicio
+              </button>
+            </div>
+          </div>
+        );
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* 🔹 PANTALLA DE BIENVENIDA */}
-      {currentScreen === 'welcome' && (
-        <WelcomeScreen
-          onRegister={handleRegister}
-          onLogin={handleLogin}
-          onAdminLogin={handleAdminLogin}
-        />
-      )}
-
-      {/* 🔹 SELECCIÓN DE ROL (Estudiante o Docente) */}
-      {currentScreen === 'role-selection' && (
-        <RoleSelectionScreen
-          onRoleSelect={handleRoleSelect}
-          onBack={handleBack}
-          isRegistration={isRegistering}
-        />
-      )}
-
-      {/* 🔹 LOGIN - ESTUDIANTE */}
-      {currentScreen === 'student-login' && (
-        <StudentLoginScreen
-          onBack={handleBack}
-          onLoginSuccess={() => handleLoginSuccess('student')}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {/* 🔹 LOGIN - DOCENTE */}
-      {currentScreen === 'teacher-login' && (
-        <TeacherLoginScreen
-          onBack={handleBack}
-          onLoginSuccess={() => handleLoginSuccess('teacher')}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {/* 🔹 LOGIN - ADMINISTRADOR */}
-      {currentScreen === 'admin-login' && (
-        <AdminLoginScreen
-          onBack={handleBack}
-          onLoginSuccess={() => handleLoginSuccess('admin')}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {/* 🔹 REGISTRO - ESTUDIANTE */}
-      {currentScreen === 'student-register' && (
-        <StudentRegisterScreen
-          onBack={handleBack}
-          onLoginSuccess={() => handleLoginSuccess('student')}
-        />
-      )}
-
-      {/* 🔹 REGISTRO - DOCENTE */}
-      {currentScreen === 'teacher-register' && (
-        <TeacherRegisterScreen
-          onBack={handleBack}
-          onLoginSuccess={() => handleLoginSuccess('teacher')}
-        />
-      )}
-
-      {/* 🔹 CATÁLOGO DE CURSOS (para estudiantes) */}
-      {currentScreen === 'catalog' && (
-        <CourseCatalogScreen role={selectedRole} onNavigate={handleNavigate} />
-      )}
-
-      {/* 🔹 TABLA DE CLASIFICACIÓN */}
-      {currentScreen === 'leaderboard' && (
-        <LeaderboardScreen onNavigate={handleNavigate} />
-      )}
-
-      {/* 🔹 INSIGNIAS */}
-      {currentScreen === 'badges' && (
-        <BadgesScreen onNavigate={handleNavigate} />
-      )}
-
-      {/* 🔹 PERFIL GENERAL */}
-      {currentScreen === 'profile' && (
-        <ProfileScreen onNavigate={handleNavigate} />
-      )}
-
-      {/* 🔹 DASHBOARD - DOCENTE */}
-      {currentScreen === 'teacher-dashboard' && (
-        <TeacherDashboardView
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {/* 🔹 PERFIL - DOCENTE */}
-      {currentScreen === 'teacher-profile' && (
-        <TeacherProfile onNavigate={handleNavigate} />
-      )}
-
-      {/* 🔹 DASHBOARD - ADMINISTRADOR */}
-      {currentScreen === 'admin-dashboard' && (
-        <AdminDashboard
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-        />
-      )}
-    </div>
+    <ErrorBoundary>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-100">
+          {renderScreen()}
+        </div>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

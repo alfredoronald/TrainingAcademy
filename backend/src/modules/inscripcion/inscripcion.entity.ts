@@ -8,9 +8,9 @@ export class Inscripcion {
   @PrimaryGeneratedColumn({ name: 'id_inscripcion' })
   id_inscripcion: number;
 
-  @ManyToOne(() => Curso)
-  @JoinColumn({ name: 'id_curso' })
-  curso: Curso;
+ @ManyToOne(() => Curso)
+@JoinColumn({ name: 'id_curso' })
+curso: Curso;
 
   @ManyToOne(() => Usuario, u => u.inscripciones)
   @JoinColumn({ name: 'id_usuario' })
