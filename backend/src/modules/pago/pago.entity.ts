@@ -12,17 +12,32 @@ export class Pago {
   @Column('decimal', { precision: 10, scale: 2 })
   monto: number;
 
-  @Column({ type: 'enum', enum: ['TARJETA', 'TRANSFERENCIA', 'BILLETERA'] })
+  @Column({
+    type: 'enum',
+    enum: ['TARJETA', 'TRANSFERENCIA', 'BILLETERA'],
+    default: 'TARJETA'
+  })
   metodo_pago: string;
 
-  @Column({ name: 'descuento_aplicado', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'descuento_aplicado',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0
+  })
   descuento_aplicado: number;
 
-  @Column({ name: 'fecha_pago', default: () => 'CURRENT_DATE' })
+  // ✅ CAMBIO AQUÍ → debe ser type: 'timestamp' y typeScript tipo Date
+  @Column({
+    name: 'fecha_pago',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP'
+  })
   fecha_pago: Date;
 
-  // Relación
-  @ManyToOne(() => Inscripcion, inscripcion => inscripcion.pagos)
+  // Relación con Inscripción
+  @ManyToOne(() => Inscripcion, inscripcion => inscripcion.pagos, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'id_inscripcion' })
   inscripcion: Inscripcion;
 }
