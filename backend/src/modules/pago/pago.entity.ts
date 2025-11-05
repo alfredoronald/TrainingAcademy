@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Inscripcion } from '../inscripcion/inscripcion.entity';
 
 @Entity({ name: 'pago' })
@@ -6,19 +6,23 @@ export class Pago {
   @PrimaryGeneratedColumn({ name: 'id_pago' })
   id_pago: number;
 
-  @ManyToOne(() => Inscripcion)
-  @JoinColumn({ name: 'id_inscripcion' })
-  inscripcion: Inscripcion;
+  @Column({ name: 'id_inscripcion' })
+  id_inscripcion: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2 })
   monto: number;
 
-  @Column({ type: 'varchar', length: 20, name: 'metodo_pago', nullable: true })
+  @Column({ type: 'enum', enum: ['TARJETA', 'TRANSFERENCIA', 'BILLETERA'] })
   metodo_pago: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ name: 'descuento_aplicado', type: 'decimal', precision: 10, scale: 2, default: 0 })
   descuento_aplicado: number;
 
-  @CreateDateColumn({ name: 'fecha_pago', type: 'date' })
-  fecha_pago: string;
+  @Column({ name: 'fecha_pago', default: () => 'CURRENT_DATE' })
+  fecha_pago: Date;
+
+  // Relación
+  @ManyToOne(() => Inscripcion, inscripcion => inscripcion.pagos)
+  @JoinColumn({ name: 'id_inscripcion' })
+  inscripcion: Inscripcion;
 }

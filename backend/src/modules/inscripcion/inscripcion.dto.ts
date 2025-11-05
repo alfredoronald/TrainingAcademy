@@ -1,8 +1,15 @@
+import { IsInt, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+
 export class CreateInscripcionDto {
+  @IsInt()
+  @IsNotEmpty()
   id_curso: number;
+
+  @IsInt()
+  @IsNotEmpty()
   id_usuario: number;
-  estado?: string;
-  precio: number;
-  precio_final: number;
-  fecha_inscripcion?: Date;
+
+  @IsOptional()
+  @IsEnum(['TARJETA', 'TRANSFERENCIA', 'BILLETERA'])
+  metodo_pago?: string;
 }

@@ -13,6 +13,7 @@ import { UsuarioInsignia } from '../usuario-insignia/usuario-insignia.entity';
 import { DetalleRol } from '../detalle-rol/detalle-rol.entity';
 import { Curso } from '../curso/curso.entity';
 
+
 @Entity({ name: 'usuario' })
 export class Usuario {
   @PrimaryGeneratedColumn({ name: 'id_usuario' })
@@ -54,4 +55,7 @@ export class Usuario {
   // 🔹 Relación con los cursos dictados (si el usuario es docente)
   @OneToMany(() => Curso, (curso) => curso.docente)
   cursos_dictados: Curso[];
+  @OneToMany(() => ProgresoCurso, progresoCurso => progresoCurso.usuario)
+progresosCursos: ProgresoCurso[];
+
 }

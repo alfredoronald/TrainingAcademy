@@ -1,12 +1,42 @@
-import { Controller, Post, Get, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, ParseIntPipe } from '@nestjs/common';
 import { InscripcionService } from './inscripcion.service';
+import { CreateInscripcionDto } from './inscripcion.dto';
 
 @Controller('inscripciones')
 export class InscripcionController {
-  constructor(private svc: InscripcionService) {}
-  @Post() create(@Body() b: any) { return this.svc.create(b); }
-  @Get() findAll() { return this.svc.findAll(); }
-  @Get(':id') findOne(@Param('id') id: string) { return this.svc.findOne(+id); }
-  @Put(':id') update(@Param('id') id: string, @Body() b: any) { return this.svc.update(+id,b); }
-  @Delete(':id') remove(@Param('id') id: string) { return this.svc.remove(+id); }
+  constructor(private readonly inscripcionService: InscripcionService) {}
+
+  @Post()
+  async create(@Body() createInscripcionDto: CreateInscripcionDto) {
+    return await this.inscripcionService.create(createInscripcionDto);
+  }
+
+  @Get('usuario/:idUsuario')
+  async findByUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number) {
+    return await this.inscripcionService.findByUsuario(idUsuario);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return await this.inscripcionService.findOne(id);
+  }
+
+  // 🆕 ENDPOINTS PARA PROGRESO - CORREGIDOS
+   @Get('progreso-curso/usuario/:idUsuario')
+  async getProgresoCursosUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number) {
+    return await this.inscripcionService.getProgresoCursosUsuario(idUsuario);
+  }
+
+  @Get('progreso-curso/usuario/:idUsuario/curso/:idCurso')
+  async getProgresoCursoUsuario(
+    @Param('idUsuario', ParseIntPipe) idUsuario: number,
+    @Param('idCurso', ParseIntPipe) idCurso: number
+  ) {
+    return await this.inscripcionService.getProgresoCursoUsuario(idUsuario, idCurso);
+  }
+
+  @Get('debug/progreso-curso')
+  async debugProgresoCurso() {
+    return await this.inscripcionService.debugProgresoCurso();
+  }
 }
