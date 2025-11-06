@@ -6,38 +6,19 @@ export class Pago {
   @PrimaryGeneratedColumn({ name: 'id_pago' })
   id_pago: number;
 
-  @Column({ name: 'id_inscripcion' })
-  id_inscripcion: number;
-
-  @Column('decimal', { precision: 10, scale: 2 })
-  monto: number;
-
-  @Column({
-    type: 'enum',
-    enum: ['TARJETA', 'TRANSFERENCIA', 'BILLETERA'],
-    default: 'TARJETA'
-  })
-  metodo_pago: string;
-
-  @Column({
-    name: 'descuento_aplicado',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0
-  })
-  descuento_aplicado: number;
-
-  // ✅ CAMBIO AQUÍ → debe ser type: 'timestamp' y typeScript tipo Date
-  @Column({
-    name: 'fecha_pago',
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP'
-  })
-  fecha_pago: Date;
-
-  // Relación con Inscripción
-  @ManyToOne(() => Inscripcion, inscripcion => inscripcion.pagos, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Inscripcion, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'id_inscripcion' })
   inscripcion: Inscripcion;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  monto: number;
+
+  @Column({ type: 'varchar', length: 20, name: 'metodo_pago', nullable: true })
+  metodo_pago: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  descuento_aplicado: number;
+
+  @Column({ type: 'date', default: () => 'CURRENT_DATE' })
+  fecha_pago: string;
 }
