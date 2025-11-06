@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { InscripcionService } from './inscripcion.service';
+import { CreateInscripcionDto } from './inscripcion.dto';
 
 @Controller('inscripciones')
 export class InscripcionController {

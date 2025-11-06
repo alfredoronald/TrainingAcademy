@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, Unique, BeforeInsert } from 'typeorm';
 import { Curso } from '../curso/curso.entity';
 import { Usuario } from '../usuario/usuario.entity';
+import { Pago } from '../pago/pago.entity';
 
 @Entity({ name: 'inscripcion' })
 @Unique(['curso', 'usuario'])
@@ -18,7 +19,7 @@ export class Inscripcion {
   @JoinColumn({ name: 'id_curso' })
   curso: Curso;
 
-  @ManyToOne(() => Usuario, u => u.inscripciones)
+  @ManyToOne(() => Usuario)
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 
