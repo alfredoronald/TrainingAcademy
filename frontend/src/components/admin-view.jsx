@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { User, Book, Trash2, PlusCircle, GraduationCap, Edit } from "lucide-react";
+import { User, Book, Trash2, PlusCircle, GraduationCap, Edit, X } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 
 export default function AdminDashboard({ onNavigate }) {
@@ -8,6 +8,17 @@ export default function AdminDashboard({ onNavigate }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({
+    nombre_curso: "",
+    descripcion: "",
+    costo: "",
+    duracion: "",
+    cupos: "",
+    modalidad: "VIRTUAL",
+    horarios: [],
+    modulos: [],
+  });
 
   useEffect(() => {
     fetchCourses();
@@ -43,51 +54,50 @@ export default function AdminDashboard({ onNavigate }) {
     }
   };
 
-  const handleCreateCourse = async () => {
-    const nombre_curso = prompt("Nombre del nuevo curso:");
-    if (!nombre_curso || nombre_curso.trim() === "") {
-      alert("⚠️ El nombre del curso no puede estar vacío");
-      return;
-    }
-
-    const descripcion = prompt("Descripción del curso (opcional):") || "";
-    const duracion = prompt("Duración en horas (ejemplo: 40):") || "40";
-    const modalidad = prompt("Modalidad (Virtual/Presencial):") || "Virtual";
-    const costo = prompt("Costo del curso (ejemplo: 200):") || "0";
-    const cupos = prompt("Cantidad de cupos (ejemplo: 30):") || "30";
-
+  // 🟢 CREAR CURSO CON FORMULARIO MODAL
+  const handleCreateCourse = async (e) => {
+    e.preventDefault();
     try {
+      const body = {
+        nombre_curso: form.nombre_curso,
+        descripcion: form.descripcion,
+        costo: Number(form.costo),
+        duracion: Number(form.duracion),
+        cupos: Number(form.cupos),
+        modalidad: form.modalidad,
+        id_docente: user.id_usuario,
+        estado_disponibilidad: 'ACTIVO',
+        id_tipo_curso: 1, // Valor por defecto para Curso
+      };
+
       const res = await fetch("http://localhost:3000/api/cursos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre_curso: nombre_curso.trim(),
-          descripcion: descripcion.trim(),
-          duracion: parseInt(duracion),
-          modalidad: modalidad.trim(),
-          costo: parseFloat(costo),
-          cupos: parseInt(cupos),
-          id_docente: user.id_usuario, // Asignar el admin como docente temporal
-          estado_disponibilidad: "ACTIVO"
-        }),
+        body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al crear el curso");
-      }
-
       const newCourse = await res.json();
-      
-      if (newCourse && newCourse.id_curso) {
-        // Recargar todos los cursos para mantener consistencia
-        await fetchCourses();
-        alert("✅ Curso añadido correctamente");
+
+      if (res.ok && newCourse.id_curso) {
+        setCourses([...courses, newCourse]);
+        setShowModal(false);
+        // Resetear formulario
+        setForm({
+          nombre_curso: "",
+          descripcion: "",
+          costo: "",
+          duracion: "",
+          cupos: "",
+          modalidad: "VIRTUAL",
+          horarios: [],
+          modulos: [],
+        });
+        alert("✅ Curso creado exitosamente!");
       } else {
-        throw new Error("El servidor no devolvió un curso válido");
+        alert("❌ Error creando curso: " + (newCourse.message || "Error desconocido"));
       }
     } catch (err) {
-      alert("❌ Error creando curso: " + err.message);
+      alert("❌ Error creando curso");
       console.error(err);
     }
   };
@@ -113,6 +123,28 @@ export default function AdminDashboard({ onNavigate }) {
       alert("❌ Error eliminando curso: " + err.message);
       console.error(err);
     }
+  };
+
+  // ➕ Horarios dinámicos
+  const addHorario = () =>
+    setForm({ ...form, horarios: [...form.horarios, { dia_semana: "", hora_inicio: "", hora_fin: "" }] });
+  const removeHorario = (i) =>
+    setForm({ ...form, horarios: form.horarios.filter((_, idx) => idx !== i) });
+  const updateHorario = (i, key, value) => {
+    const updated = [...form.horarios];
+    updated[i][key] = value;
+    setForm({ ...form, horarios: updated });
+  };
+
+  // ➕ Módulos dinámicos
+  const addModulo = () =>
+    setForm({ ...form, modulos: [...form.modulos, { nombre_modulo: "", descripcion_modulo: "", orden_modulo: form.modulos.length + 1 }] });
+  const removeModulo = (i) =>
+    setForm({ ...form, modulos: form.modulos.filter((_, idx) => idx !== i) });
+  const updateModulo = (i, key, value) => {
+    const updated = [...form.modulos];
+    updated[i][key] = value;
+    setForm({ ...form, modulos: updated });
   };
 
   if (!user) {
@@ -141,11 +173,11 @@ export default function AdminDashboard({ onNavigate }) {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={handleCreateCourse}
+              onClick={() => setShowModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-white text-blue-800 rounded-lg hover:bg-blue-50 transition-colors font-medium shadow-sm"
             >
               <PlusCircle className="w-5 h-5" />
-              Añadir Curso
+              Crear Curso
             </button>
             <button
               onClick={() => onNavigate("profile")}
@@ -202,7 +234,7 @@ export default function AdminDashboard({ onNavigate }) {
             </p>
             {!error && (
               <button
-                onClick={handleCreateCourse}
+                onClick={() => setShowModal(true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-800 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <PlusCircle className="w-5 h-5" />
@@ -303,6 +335,170 @@ export default function AdminDashboard({ onNavigate }) {
           </>
         )}
       </main>
+
+      {/* MODAL PARA CREAR CURSO */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
+          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-8 relative animate-fadeInScale overflow-y-auto max-h-[90vh]">
+            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition" onClick={() => setShowModal(false)}>
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-2xl font-semibold text-blue-700 mb-5 text-center">Crear Nuevo Curso</h2>
+            <form onSubmit={handleCreateCourse} className="space-y-4">
+              {/* CURSO */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Curso</label>
+                <input 
+                  type="text" 
+                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none" 
+                  value={form.nombre_curso} 
+                  onChange={(e) => setForm({ ...form, nombre_curso: e.target.value })} 
+                  placeholder="HTML Y CSS"
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                <textarea 
+                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none" 
+                  value={form.descripcion} 
+                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })} 
+                  placeholder="Aprende a crear e interactuar con el desarrollo de paginas web"
+                  required 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo ($)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none" 
+                    value={form.costo} 
+                    onChange={(e) => setForm({ ...form, costo: e.target.value })} 
+                    placeholder="100"
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cupos</label>
+                  <input 
+                    type="number" 
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none" 
+                    value={form.cupos} 
+                    onChange={(e) => setForm({ ...form, cupos: e.target.value })} 
+                    placeholder="50"
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duración (h)</label>
+                  <input 
+                    type="number" 
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none" 
+                    value={form.duracion} 
+                    onChange={(e) => setForm({ ...form, duracion: e.target.value })} 
+                    placeholder="60"
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+                  <select 
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none" 
+                    value={form.modalidad} 
+                    onChange={(e) => setForm({ ...form, modalidad: e.target.value })}
+                  >
+                    <option value="VIRTUAL">VIRTUAL</option>
+                    <option value="PRESENCIAL">PRESENCIAL</option>
+                    <option value="HIBRIDO">HIBRIDO</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* HORARIOS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-700 mb-2">Horarios</h3>
+                {form.horarios.map((h, i) => (
+                  <div key={i} className="grid grid-cols-4 gap-2 mb-2">
+                    <input 
+                      type="text" 
+                      placeholder="Día (ej: Lunes)" 
+                      value={h.dia_semana} 
+                      onChange={(e) => updateHorario(i, "dia_semana", e.target.value)} 
+                      className="border rounded px-2 py-1" 
+                    />
+                    <input 
+                      type="time" 
+                      placeholder="Inicio" 
+                      value={h.hora_inicio} 
+                      onChange={(e) => updateHorario(i, "hora_inicio", e.target.value)} 
+                      className="border rounded px-2 py-1" 
+                    />
+                    <input 
+                      type="time" 
+                      placeholder="Fin" 
+                      value={h.hora_fin} 
+                      onChange={(e) => updateHorario(i, "hora_fin", e.target.value)} 
+                      className="border rounded px-2 py-1" 
+                    />
+                    <button type="button" onClick={() => removeHorario(i)} className="text-red-500 font-bold hover:text-red-700">X</button>
+                  </div>
+                ))}
+                <button type="button" onClick={addHorario} className="text-blue-600 hover:text-blue-800 font-medium">
+                  + Agregar Horario
+                </button>
+              </div>
+
+              {/* MÓDULOS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-700 mb-2">Módulos</h3>
+                {form.modulos.map((m, i) => (
+                  <div key={i} className="grid grid-cols-3 gap-2 mb-2">
+                    <input 
+                      type="text" 
+                      placeholder="Nombre del módulo" 
+                      value={m.nombre_modulo} 
+                      onChange={(e) => updateModulo(i, "nombre_modulo", e.target.value)} 
+                      className="border rounded px-2 py-1" 
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Descripción" 
+                      value={m.descripcion_modulo} 
+                      onChange={(e) => updateModulo(i, "descripcion_modulo", e.target.value)} 
+                      className="border rounded px-2 py-1" 
+                    />
+                    <button type="button" onClick={() => removeModulo(i)} className="text-red-500 font-bold hover:text-red-700">X</button>
+                  </div>
+                ))}
+                <button type="button" onClick={addModulo} className="text-blue-600 hover:text-blue-800 font-medium">
+                  + Agregar Módulo
+                </button>
+              </div>
+
+              {/* BOTONES */}
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)} 
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  Crear Curso
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
