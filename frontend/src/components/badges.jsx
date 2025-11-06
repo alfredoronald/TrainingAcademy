@@ -28,7 +28,7 @@ export default function BadgesScreen({ onNavigate }) {
 
     console.log("🔄 Cargando insignias para usuario:", idUsuario);
 
-    fetch(`http://localhost:3000/usuario-insignia/usuario/${idUsuario}`)
+    fetch(`http://localhost:3000/api/usuario-insignia/usuario/${idUsuario}`)
       .then((res) => {
         console.log("📡 Response status:", res.status);
         if (!res.ok) {
@@ -50,44 +50,58 @@ export default function BadgesScreen({ onNavigate }) {
     cargarEstadisticasUsuario();
   }, [idUsuario]);
 
-  // 🔹 Cargar estadísticas del usuario desde los nuevos endpoints
+  // 🔹 Cargar estadísticas del usuario usando endpoints existentes
 const cargarEstadisticasUsuario = async () => {
   if (!idUsuario) return;
 
   try {
-    const endpoints = [
-      `http://localhost:3000/asistencias/usuario/${idUsuario}/count`,
-      `http://localhost:3000/mensajes/usuario/${idUsuario}/count`,
-      `http://localhost:3000/evaluaciones/usuario/${idUsuario}/aprobadas/count`,
-      `http://localhost:3000/progreso-modulo/usuario/${idUsuario}/completados/count`
-    ];
+    console.log("🔄 Cargando estadísticas para usuario:", idUsuario);
 
-    const responses = await Promise.all(
-      endpoints.map(url => 
-        fetch(url)
-          .then(res => {
-            if (!res.ok) {
-              // Si hay error, devolver 0 en lugar del objeto de error
-              console.warn(`⚠️ Endpoint ${url} falló:`, res.status);
-              return 0;
-            }
-            return res.json();
-          })
-          .catch(error => {
-            console.error(`❌ Error en endpoint ${url}:`, error);
-            return 0;
-          })
-      )
-    );
+    // Usar endpoints existentes y filtrar en el frontend
+    const [asistenciasRes, mensajesRes, evaluacionesRes, modulosRes] = await Promise.all([
+      fetch('http://localhost:3000/api/asistencias').then(res => res.ok ? res.json() : []),
+      fetch('http://localhost:3000/api/mensajes').then(res => res.ok ? res.json() : []),
+      fetch('http://localhost:3000/api/evaluaciones').then(res => res.ok ? res.json() : []),
+      fetch('http://localhost:3000/api/progreso-modulo').then(res => res.ok ? res.json() : [])
+    ]);
 
-    setEstadisticas({
-      asistencias: responses[0] || 0,
-      mensajes: responses[1] || 0,
-      evaluacionesAprobadas: responses[2] || 0,
-      modulosCompletados: responses[3] || 0
+    console.log("📦 Datos recibidos:", {
+      asistencias: asistenciasRes,
+      mensajes: mensajesRes,
+      evaluaciones: evaluacionesRes,
+      modulos: modulosRes
     });
 
-    console.log("📊 Estadísticas cargadas:", responses);
+    // Filtrar por usuario en el frontend
+    const asistenciasUsuario = Array.isArray(asistenciasRes) 
+      ? asistenciasRes.filter(a => a.usuario?.id_usuario === idUsuario && a.estado === 'PRESENTE').length 
+      : 0;
+
+    const mensajesUsuario = Array.isArray(mensajesRes)
+      ? mensajesRes.filter(m => m.usuario?.id_usuario === idUsuario).length
+      : 0;
+
+    const evaluacionesAprobadas = Array.isArray(evaluacionesRes)
+      ? evaluacionesRes.filter(e => e.usuario?.id_usuario === idUsuario && e.estado === 'APROBADO').length
+      : 0;
+
+    const modulosCompletados = Array.isArray(modulosRes)
+      ? modulosRes.filter(m => m.usuario?.id_usuario === idUsuario && m.porcentaje_avance === 100).length
+      : 0;
+
+    setEstadisticas({
+      asistencias: asistenciasUsuario,
+      mensajes: mensajesUsuario,
+      evaluacionesAprobadas: evaluacionesAprobadas,
+      modulosCompletados: modulosCompletados
+    });
+
+    console.log("📊 Estadísticas finales:", {
+      asistencias: asistenciasUsuario,
+      mensajes: mensajesUsuario,
+      evaluacionesAprobadas: evaluacionesAprobadas,
+      modulosCompletados: modulosCompletados
+    });
 
   } catch (error) {
     console.error("❌ Error cargando estadísticas:", error);
@@ -164,7 +178,7 @@ const cargarEstadisticasUsuario = async () => {
       }
 
       // Reclamar la insignia - LLAMADA REAL AL BACKEND
-      const response = await fetch('http://localhost:3000/usuario-insignia', {
+      const response = await fetch('http://localhost:3000/api/usuario-insignia', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
