@@ -18,41 +18,26 @@ export class UsuarioInsigniaService {
     return this.repo.find();
   }
 
-  // ✅ AGREGAR ESTE MÉTODO NUEVO
+  // ✅ MÉTODO PARA OBTENER INSIGNIAS POR USUARIO
   async findByUsuario(idUsuario: number) {
-  console.log('🔍 Service - Buscando insignias para usuario:', idUsuario);
-  console.log('🔍 Service - Tipo de idUsuario:', typeof idUsuario);
-  
-  try {
-    // Verifica que la conexión a la BD funcione
-    console.log('🔍 Service - Probando conexión a BD...');
+    console.log('🔍 Service - Buscando insignias para usuario:', idUsuario);
     
-    const insignias = await this.repo.find({
-      where: { id_usuario: idUsuario },
-      relations: ['insignia']
-    });
-    
-    console.log('📦 Service - Insignias encontradas:', insignias);
-    console.log('📊 Service - Número de insignias:', insignias.length);
-    
-    // Si no hay insignias, retorna array vacío
-    return insignias || [];
-    
-  } catch (error) {
-    console.error('❌ Service - Error ENCONTRADO:', error);
-    console.error('❌ Service - Stack trace:', error.stack);
-    
-    // Para debug más detallado:
-    if (error.code) {
-      console.error('❌ Service - Error code:', error.code);
+    try {
+      const insignias = await this.repo.find({
+        where: { id_usuario: idUsuario },
+        relations: ['insignia']
+      });
+      
+      console.log('📦 Service - Insignias encontradas:', insignias);
+      console.log('📊 Service - Número de insignias:', insignias.length);
+      
+      return insignias || [];
+      
+    } catch (error) {
+      console.error('❌ Service - Error:', error);
+      throw error;
     }
-    if (error.message) {
-      console.error('❌ Service - Error message:', error.message);
-    }
-    
-    throw error;
   }
-}
 
   remove(idUsuario: number, idInsignia: number) {
     return this.repo.delete({ id_usuario: idUsuario, id_insignia: idInsignia });

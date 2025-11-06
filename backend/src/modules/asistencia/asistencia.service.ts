@@ -11,4 +11,16 @@ export class AsistenciaService {
   findOne(id: number) { return this.repo.findOneBy({ id_asistencia: id }); }
   update(id: number, data: Partial<Asistencia>) { return this.repo.update(id, data); }
   remove(id: number) { return this.repo.delete(id); }
+  
+  // ✅ NUEVO MÉTODO: Contar asistencias por usuario
+  async countByUsuario(idUsuario: number): Promise<number> {
+    const count = await this.repo.count({
+      where: { 
+        usuario: { id_usuario: idUsuario },
+        estado: 'PRESENTE' // Solo contar asistencias presentes
+      }
+    });
+    console.log(`📊 Asistencias del usuario ${idUsuario}: ${count}`);
+    return count;
+  }
 }

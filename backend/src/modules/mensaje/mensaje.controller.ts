@@ -9,4 +9,10 @@ export class MensajeController {
   @Get(':id') findOne(@Param('id') id: string) { return this.svc.findOne(+id); }
   @Put(':id') update(@Param('id') id: string, @Body() b: any) { return this.svc.update(+id,b); }
   @Delete(':id') remove(@Param('id') id: string) { return this.svc.remove(+id); }
+  
+  // ✅ NUEVO ENDPOINT PARA CONTAR MENSAJES POR USUARIO
+  @Get('usuario/:id/count')
+  async countByUsuario(@Param('id') id: string) {
+    return this.svc.countByUsuario(+id);
+  }
 }

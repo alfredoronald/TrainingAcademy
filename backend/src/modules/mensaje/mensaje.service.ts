@@ -11,4 +11,15 @@ export class MensajeService {
   findOne(id: number) { return this.repo.findOne({ where: { id_mensaje: id }, relations: ['foro','usuario'] }); }
   update(id: number, data: Partial<Mensaje>) { return this.repo.update(id,data); }
   remove(id: number) { return this.repo.delete(id); }
+  
+  // ✅ NUEVO MÉTODO: Contar mensajes por usuario
+  async countByUsuario(idUsuario: number): Promise<number> {
+    const count = await this.repo.count({
+      where: { 
+        usuario: { id_usuario: idUsuario }
+      }
+    });
+    console.log(`💬 Mensajes del usuario ${idUsuario}: ${count}`);
+    return count;
+  }
 }
