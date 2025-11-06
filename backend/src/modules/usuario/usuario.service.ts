@@ -22,70 +22,71 @@ export class UsuarioService {
   ) {}
 
   // ✅ CREAR USUARIO CON SQL DIRECTO
-  async create(data: Partial<Usuario>) {
-    try {
-      console.log('📝 Creando usuario:', data);
+  // ✅ CREAR USUARIO CON SQL DIRECTO (MODIFICACIÓN PARA SOPORTAR ROL DOCENTE)
+async create(data: Partial<Usuario> & { rol?: string }) {
+  try {
+    console.log('📝 Creando usuario:', data);
 
-      // 1. Hash de contraseña
-      let hashedPassword = data.password;
-      if (data.password && !data.password.startsWith('$2')) {
-        hashedPassword = await bcrypt.hash(data.password, 10);
-      }
-
-      // 2. Verificar si el correo ya existe
-      const existente = await this.dataSource.query(
-        'SELECT id_usuario FROM usuario WHERE correo_electronico = $1',
-        [data.correo_electronico]
-      );
-
-      if (existente && existente.length > 0) {
-        throw new Error('El correo electrónico ya está registrado');
-      }
-
-      // 3. Obtener próximo ID
-      const maxIdResult = await this.dataSource.query(
-        'SELECT COALESCE(MAX(id_usuario), 0) + 1 as next_id FROM usuario'
-      );
-      const nextId = maxIdResult[0].next_id;
-
-      // 4. Insertar usuario
-      await this.dataSource.query(
-        `INSERT INTO usuario (id_usuario, nombre, apellido, correo_electronico, password, fecha_ingreso)
-         VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)`,
-        [nextId, data.nombre, data.apellido, data.correo_electronico, hashedPassword]
-      );
-
-      console.log('✅ Usuario creado con ID:', nextId);
-
-      // 5. Buscar el rol "Estudiante"
-      const rolEstudiante = await this.rolRepository.findOne({
-        where: { nombre_rol: 'Estudiante' },
-      });
-
-      // 6. Crear relación en detalle_rol
-      if (rolEstudiante) {
-        const maxIdDetalleRol = await this.dataSource.query(
-          'SELECT COALESCE(MAX(id_usuario), 0) FROM detalle_rol'
-        );
-
-        await this.dataSource.query(
-          `INSERT INTO detalle_rol (id_usuario, id_rol)
-           VALUES ($1, $2)
-           ON CONFLICT DO NOTHING`,
-          [nextId, rolEstudiante.id_rol]
-        );
-
-        console.log('✅ Rol Estudiante asignado');
-      }
-
-      // 7. Retornar usuario completo
-      return await this.findOne(nextId);
-
-    } catch (error) {
-      console.error('❌ Error creando usuario:', error);
-      throw error;
+    // 1. Hash de contraseña
+    let hashedPassword = data.password;
+    if (data.password && !data.password.startsWith('$2')) {
+      hashedPassword = await bcrypt.hash(data.password, 10);
     }
+
+    // 2. Verificar si el correo ya existe
+    const existente = await this.dataSource.query(
+      'SELECT id_usuario FROM usuario WHERE correo_electronico = $1',
+      [data.correo_electronico]
+    );
+
+    if (existente && existente.length > 0) {
+      throw new Error('El correo electrónico ya está registrado');
+    }
+
+    // 3. Obtener próximo ID
+    const maxIdResult = await this.dataSource.query(
+      'SELECT COALESCE(MAX(id_usuario), 0) + 1 as next_id FROM usuario'
+    );
+    const nextId = maxIdResult[0].next_id;
+
+    // 4. Insertar usuario
+    await this.dataSource.query(
+      `INSERT INTO usuario (id_usuario, nombre, apellido, correo_electronico, password, fecha_ingreso)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)`,
+      [nextId, data.nombre, data.apellido, data.correo_electronico, hashedPassword]
+    );
+
+    console.log('✅ Usuario creado con ID:', nextId);
+
+    // 5. ✅ DETERMINAR ROL (Estudiante o Docente)
+    const nombreRol = data.rol === 'Docente' ? 'Docente' : 'Estudiante';
+    
+    const rol = await this.rolRepository.findOne({
+      where: { nombre_rol: nombreRol },
+    });
+
+    // 6. Crear relación en detalle_rol
+    if (rol) {
+      await this.dataSource.query(
+        `INSERT INTO detalle_rol (id_usuario, id_rol)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [nextId, rol.id_rol]
+      );
+
+      console.log(`✅ Rol ${nombreRol} asignado`);
+    } else {
+      console.warn(`⚠️ Rol ${nombreRol} no encontrado en la base de datos`);
+    }
+
+    // 7. Retornar usuario completo
+    return await this.findOne(nextId);
+
+  } catch (error) {
+    console.error('❌ Error creando usuario:', error);
+    throw error;
   }
+}
 
   // Obtener todos los usuarios
   findAll() {
