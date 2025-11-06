@@ -7,25 +7,28 @@ import { ProgresoCurso } from '../progreso-curso/progreso-curso.entity';
 
 @Entity({ name: 'curso' })
 export class Curso {
-  @PrimaryGeneratedColumn({ name: 'id_curso' })
+  @PrimaryGeneratedColumn({ 
+    name: 'id_curso',
+    type: 'integer'
+  })
   id_curso: number;
 
-  @Column({ name: 'nombre_curso', length: 200 }) // Cambié de 100 a 200 para coincidir con tu BD
+  @Column({ name: 'nombre_curso', length: 200 })
   nombre_curso: string;
 
-  @Column({ name: 'descripcion', type: 'text', nullable: true }) // Agregué nullable: true
+  @Column({ name: 'descripcion', type: 'text', nullable: true })
   descripcion: string;
 
-  @Column({ nullable: true }) // Agregué nullable: true
+  @Column({ nullable: true })
   duracion: number;
 
-  @Column({ nullable: true }) // Agregué nullable: true
+  @Column({ nullable: true })
   cupos: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 }) // Especificar tipo decimal
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   costo: number;
 
-  @Column({ length: 50, nullable: true }) // Agregué length y nullable
+  @Column({ length: 50, nullable: true })
   modalidad: string;
 
   @Column({ 
@@ -36,10 +39,10 @@ export class Curso {
   })
   estado_disponibilidad: string;
 
-  @Column({ name: 'id_usuario_docente' }) // Columna para la FK
+  @Column({ name: 'id_usuario_docente' })
   id_usuario_docente: number;
 
-  @Column({ name: 'id_tipo_curso' }) // Columna para la FK
+  @Column({ name: 'id_tipo_curso' })
   id_tipo_curso: number;
 
   @ManyToOne(() => Usuario)
@@ -50,15 +53,12 @@ export class Curso {
   @JoinColumn({ name: 'id_tipo_curso' })
   tipo_curso: TipoCurso;
 
-  // Relación con Horarios
   @OneToMany(() => HorarioCurso, horario => horario.curso)
   horarios: HorarioCurso[];
 
-  // Relación con Módulos
   @OneToMany(() => Modulo, modulo => modulo.curso)
   modulos: Modulo[];
 
-  // 🆕 Relación con ProgresoCurso
   @OneToMany(() => ProgresoCurso, progresoCurso => progresoCurso.curso)
   progresos: ProgresoCurso[];
 }
