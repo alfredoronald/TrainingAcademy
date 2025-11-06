@@ -23,7 +23,7 @@ export default function StudentRegisterScreen({ onBack }) {
         apellido: lastName,
         correo_electronico: email,
         password: password,
-        rol: 'student',
+        rol: 'Estudiante',
       }),
     });
 

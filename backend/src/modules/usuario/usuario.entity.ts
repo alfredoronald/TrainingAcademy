@@ -1,9 +1,10 @@
 import { 
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   OneToMany,
+  BeforeInsert,
 } from 'typeorm';
 import { Inscripcion } from '../inscripcion/inscripcion.entity';
 import { ProgresoCurso } from '../progreso-curso/progreso-curso.entity';
@@ -13,10 +14,9 @@ import { UsuarioInsignia } from '../usuario-insignia/usuario-insignia.entity';
 import { DetalleRol } from '../detalle-rol/detalle-rol.entity';
 import { Curso } from '../curso/curso.entity';
 
-
 @Entity({ name: 'usuario' })
 export class Usuario {
-  @PrimaryGeneratedColumn({ name: 'id_usuario' })
+  @PrimaryColumn({ name: 'id_usuario' })
   id_usuario: number;
 
   @Column({ length: 100 })
@@ -38,7 +38,7 @@ export class Usuario {
   inscripciones: Inscripcion[];
 
   @OneToMany(() => ProgresoCurso, (p) => p.usuario)
-  progresosCursos: ProgresoCurso[]; // Cambié el nombre para coincidir
+  progresosCursos: ProgresoCurso[];
 
   @OneToMany(() => Puntos, (pt) => pt.usuario)
   puntajes: Puntos[];
@@ -47,12 +47,16 @@ export class Usuario {
   mensajes: Mensaje[];
 
   @OneToMany(() => UsuarioInsignia, (ui) => ui.usuario)
-  insignias: UsuarioInsignia[];
+  usuarioInsignias: UsuarioInsignia[]; // ✅ Cambié el nombre para consistencia
 
   @OneToMany(() => DetalleRol, (detalleRol) => detalleRol.usuario)
   detalleRoles: DetalleRol[];
 
-  // Relación con los cursos dictados (si el usuario es docente)
   @OneToMany(() => Curso, (curso) => curso.docente)
   cursos_dictados: Curso[];
+
+  @BeforeInsert()
+  async setId() {
+    // Se manejará en el service con query manual
+  }
 }

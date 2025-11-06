@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'; 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Usuario } from './usuario.entity';
 import { Rol } from '../rol/rol.entity';
 import { DetalleRol } from '../detalle-rol/detalle-rol.entity';
@@ -17,37 +17,74 @@ export class UsuarioService {
 
     @InjectRepository(DetalleRol)
     private readonly detalleRolRepository: Repository<DetalleRol>,
+
+    private dataSource: DataSource,
   ) {}
 
-  // Crear usuario con rol por defecto (Estudiante)
+  // ✅ CREAR USUARIO CON SQL DIRECTO
   async create(data: Partial<Usuario>) {
-    if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
-    }
+    try {
+      console.log('📝 Creando usuario:', data);
 
-    // 1️⃣ Crear el usuario
-    const usuario = this.usuarioRepository.create(data);
-    const usuarioGuardado = await this.usuarioRepository.save(usuario);
+      // 1. Hash de contraseña
+      let hashedPassword = data.password;
+      if (data.password && !data.password.startsWith('$2')) {
+        hashedPassword = await bcrypt.hash(data.password, 10);
+      }
 
-    // 2️⃣ Buscar el rol por defecto "Estudiante"
-    const rolPorDefecto = await this.rolRepository.findOne({
-      where: { nombre_rol: 'Estudiante' },
-    });
+      // 2. Verificar si el correo ya existe
+      const existente = await this.dataSource.query(
+        'SELECT id_usuario FROM usuario WHERE correo_electronico = $1',
+        [data.correo_electronico]
+      );
 
-    // 3️⃣ Crear la relación detalleRol automáticamente
-    if (rolPorDefecto) {
-      const detalleRol = this.detalleRolRepository.create({
-        usuario: usuarioGuardado,
-        rol: rolPorDefecto,
+      if (existente && existente.length > 0) {
+        throw new Error('El correo electrónico ya está registrado');
+      }
+
+      // 3. Obtener próximo ID
+      const maxIdResult = await this.dataSource.query(
+        'SELECT COALESCE(MAX(id_usuario), 0) + 1 as next_id FROM usuario'
+      );
+      const nextId = maxIdResult[0].next_id;
+
+      // 4. Insertar usuario
+      await this.dataSource.query(
+        `INSERT INTO usuario (id_usuario, nombre, apellido, correo_electronico, password, fecha_ingreso)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)`,
+        [nextId, data.nombre, data.apellido, data.correo_electronico, hashedPassword]
+      );
+
+      console.log('✅ Usuario creado con ID:', nextId);
+
+      // 5. Buscar el rol "Estudiante"
+      const rolEstudiante = await this.rolRepository.findOne({
+        where: { nombre_rol: 'Estudiante' },
       });
-      await this.detalleRolRepository.save(detalleRol);
-    }
 
-    // 4️⃣ Devolver el usuario completo con relaciones
-    return this.usuarioRepository.findOne({
-      where: { id_usuario: usuarioGuardado.id_usuario },
-      relations: ['detalleRoles', 'detalleRoles.rol', 'detalleRoles.rol.permisos'],
-    });
+      // 6. Crear relación en detalle_rol
+      if (rolEstudiante) {
+        const maxIdDetalleRol = await this.dataSource.query(
+          'SELECT COALESCE(MAX(id_usuario), 0) FROM detalle_rol'
+        );
+
+        await this.dataSource.query(
+          `INSERT INTO detalle_rol (id_usuario, id_rol)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [nextId, rolEstudiante.id_rol]
+        );
+
+        console.log('✅ Rol Estudiante asignado');
+      }
+
+      // 7. Retornar usuario completo
+      return await this.findOne(nextId);
+
+    } catch (error) {
+      console.error('❌ Error creando usuario:', error);
+      throw error;
+    }
   }
 
   // Obtener todos los usuarios
@@ -69,9 +106,11 @@ export class UsuarioService {
   // Actualizar usuario
   async update(id: number, data: Partial<Usuario>) {
     if (!id || isNaN(id)) return null;
-    if (data.password) {
+    
+    if (data.password && !data.password.startsWith('$2')) {
       data.password = await bcrypt.hash(data.password, 10);
     }
+    
     await this.usuarioRepository.update(id, data);
     return this.findOne(id);
   }
