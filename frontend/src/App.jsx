@@ -7,7 +7,7 @@ import StudentLoginScreen from './components/login-estudent.jsx';
 import TeacherLoginScreen from './components/teacher-login.jsx';
 import StudentRegisterScreen from './components/register-student.jsx';
 import TeacherRegisterScreen from './components/register-teacher.jsx';
-import CourseCatalogScreen from './components/cuorse-catalogo.jsx';
+import CourseCatalogScreen from './components/course-catalogo.jsx';
 import LeaderboardScreen from './components/lead-board.jsx';
 import BadgesScreen from './components/badges.jsx';
 import ProfileScreen from './components/profile.jsx';
@@ -16,11 +16,13 @@ import TeacherProfile from './components/teacher-profile.jsx';
 import AdminLoginScreen from './components/login-admin.jsx';
 import AdminDashboard from './components/admin-view.jsx';
 import MyCoursesScreen from './components/MyCoursesScreen';
+import CourseDetail from './components/course-detail.jsx';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [selectedRole, setSelectedRole] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [navigationParams, setNavigationParams] = useState({}); // 🆕 PARA GUARDAR PARÁMETROS
 
   // 🆕 Debug
   console.log('Current Screen:', currentScreen);
@@ -68,6 +70,8 @@ function App() {
       setCurrentScreen('welcome');
     } else if (currentScreen === 'my-courses') {
       setCurrentScreen('catalog');
+    } else if (currentScreen === 'course-detail') {
+      setCurrentScreen('catalog');
     }
   };
 
@@ -88,11 +92,16 @@ function App() {
   const handleNavigate = (screen, params = {}) => {
     console.log('Navegando a:', screen, 'con parámetros:', params);
     
+    // Guardar parámetros de navegación
+    setNavigationParams(params);
+    
     // Manejar navegación específica para estudiantes
     if (screen === 'my-courses' && selectedRole === 'student') {
       setCurrentScreen('my-courses');
     } else if (screen === 'catalog' && selectedRole === 'student') {
       setCurrentScreen('catalog');
+    } else if (screen === 'course-detail') {
+      setCurrentScreen('course-detail');
     } else {
       setCurrentScreen(screen);
     }
@@ -104,6 +113,7 @@ function App() {
     setCurrentScreen('welcome');
     setSelectedRole(null);
     setIsRegistering(false);
+    setNavigationParams({});
   };
 
   // 🆕 Función para renderizar cada pantalla con manejo de navegación consistente
@@ -111,7 +121,8 @@ function App() {
     const commonProps = {
       onNavigate: handleNavigate,
       onBack: handleBack,
-      onLogout: handleLogout
+      onLogout: handleLogout,
+      params: navigationParams // 🆕 AGREGAR PARÁMETROS A TODAS LAS PANTALLAS
     };
 
     switch (currentScreen) {
@@ -215,6 +226,15 @@ function App() {
       case 'admin-dashboard':
         return (
           <AdminDashboard {...commonProps} />
+        );
+
+      // 🆕 CASO CORREGIDO PARA EL DETALLE DEL CURSO:
+      case 'course-detail':
+        return (
+          <CourseDetail 
+            courseId={navigationParams.courseId} 
+            {...commonProps} 
+          />
         );
 
       default:

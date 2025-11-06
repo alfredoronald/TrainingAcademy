@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal } from "lucide-react";
+import {
+  GraduationCap,
+  Award,
+  Trophy,
+  User,
+  Users,
+  Star,
+  ShoppingCart,
+  FileText,
+  Medal,
+} from "lucide-react";
 import { useCursos } from "../hooks/useCursos";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
 import { useInscripciones } from "../hooks/useInscripciones";
@@ -10,16 +20,13 @@ export default function CourseCatalogScreen({ onNavigate }) {
   const idUsuario = user?.id_usuario;
   const { courses, errorCursos, loadingCursos } = useCursos();
   const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(idUsuario);
-  
-  const { 
-    inscripciones, 
-    inscribirEnCurso, 
-    inscribiendo,
-    estaInscrito 
-  } = useInscripciones(idUsuario);
-  
+
+  const { inscripciones, inscribirEnCurso, inscribiendo, estaInscrito } =
+    useInscripciones(idUsuario);
+
   const [mostrarFactura, setMostrarFactura] = useState(null);
-  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState('TARJETA');
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] =
+    useState("TARJETA");
   const [mostrarSeleccionPago, setMostrarSeleccionPago] = useState(false);
   const [cursoSeleccionado, setCursoSeleccionado] = useState(null);
   const [cursosRenderizados, setCursosRenderizados] = useState([]);
@@ -27,8 +34,8 @@ export default function CourseCatalogScreen({ onNavigate }) {
   // Efecto para sincronizar cursos con validación
   useEffect(() => {
     if (courses && Array.isArray(courses)) {
-      const cursosValidos = courses.filter(curso => 
-        curso && curso.id_curso && typeof curso.id_curso === 'number'
+      const cursosValidos = courses.filter(
+        (curso) => curso && curso.id_curso && typeof curso.id_curso === "number"
       );
       setCursosRenderizados(cursosValidos);
     }
@@ -36,25 +43,25 @@ export default function CourseCatalogScreen({ onNavigate }) {
 
   // MÉTODOS DE PAGO DISPONIBLES
   const metodosPago = [
-    { id: 'TARJETA', nombre: 'Tarjeta de Crédito/Débito', icono: '💳' },
-    { id: 'TRANSFERENCIA', nombre: 'Transferencia Bancaria', icono: '🏦' },
-    { id: 'BILLETERA', nombre: 'Billetera ', icono: '📱' }
+    { id: "TARJETA", nombre: "Tarjeta de Crédito/Débito", icono: "💳" },
+    { id: "TRANSFERENCIA", nombre: "Transferencia Bancaria", icono: "🏦" },
+    { id: "BILLETERA", nombre: "Billetera ", icono: "📱" },
   ];
 
   // FUNCIÓN PARA MOSTRAR SELECCIÓN DE PAGO
   const handleSeleccionarPago = (curso) => {
     if (!idUsuario) {
-      alert('Debes iniciar sesión para inscribirte');
+      alert("Debes iniciar sesión para inscribirte");
       return;
     }
 
     if (estaInscrito(curso.id_curso)) {
-      alert('Ya estás inscrito en este curso');
+      alert("Ya estás inscrito en este curso");
       return;
     }
 
-    if (curso.estado_disponibilidad !== 'ACTIVO') {
-      alert('Este curso no está disponible actualmente');
+    if (curso.estado_disponibilidad !== "ACTIVO") {
+      alert("Este curso no está disponible actualmente");
       return;
     }
 
@@ -66,26 +73,37 @@ export default function CourseCatalogScreen({ onNavigate }) {
   const handleConfirmarInscripcion = async () => {
     if (!cursoSeleccionado) return;
 
-    const resultado = await inscribirEnCurso(cursoSeleccionado.id_curso, metodoPagoSeleccionado);
-    
+    const resultado = await inscribirEnCurso(
+      cursoSeleccionado.id_curso,
+      metodoPagoSeleccionado
+    );
+
     if (resultado.success) {
       // Asegurar que la factura tenga valores numéricos válidos
       const facturaConValoresSeguros = {
         ...resultado.data,
         inscripcion: {
-          precio_final: Number(resultado.data.inscripcion?.precio_final) || Number(cursoSeleccionado.costo) || 0,
-          precio: Number(resultado.data.inscripcion?.precio) || Number(cursoSeleccionado.costo) || 0,
-          id_inscripcion: resultado.data.inscripcion?.id_inscripcion || Date.now(),
-          ...resultado.data.inscripcion
+          precio_final:
+            Number(resultado.data.inscripcion?.precio_final) ||
+            Number(cursoSeleccionado.costo) ||
+            0,
+          precio:
+            Number(resultado.data.inscripcion?.precio) ||
+            Number(cursoSeleccionado.costo) ||
+            0,
+          id_inscripcion:
+            resultado.data.inscripcion?.id_inscripcion || Date.now(),
+          ...resultado.data.inscripcion,
         },
         pago: {
           id_pago: resultado.data.pago?.id_pago || Date.now(),
-          metodo_pago: resultado.data.pago?.metodo_pago || metodoPagoSeleccionado,
-          ...resultado.data.pago
+          metodo_pago:
+            resultado.data.pago?.metodo_pago || metodoPagoSeleccionado,
+          ...resultado.data.pago,
         },
-        curso: cursoSeleccionado
+        curso: cursoSeleccionado,
       };
-      
+
       setMostrarFactura(facturaConValoresSeguros);
       setMostrarSeleccionPago(false);
       setCursoSeleccionado(null);
@@ -105,8 +123,10 @@ export default function CourseCatalogScreen({ onNavigate }) {
         <div className="bg-white rounded-lg w-full max-w-md">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Selecciona Método de Pago</h2>
-              <button 
+              <h2 className="text-xl font-bold text-gray-900">
+                Selecciona Método de Pago
+              </h2>
+              <button
                 onClick={onClose}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
@@ -115,8 +135,12 @@ export default function CourseCatalogScreen({ onNavigate }) {
             </div>
 
             <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 mb-2">Curso: {curso.nombre_curso}</h3>
-              <p className="text-lg font-bold text-blue-600">Total: ${curso.costo || 0}</p>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Curso: {curso.nombre_curso}
+              </h3>
+              <p className="text-lg font-bold text-blue-600">
+                Total: ${curso.costo || 0}
+              </p>
             </div>
 
             <div className="space-y-3 mb-6">
@@ -126,23 +150,29 @@ export default function CourseCatalogScreen({ onNavigate }) {
                   onClick={() => setMetodoPagoSeleccionado(metodo.id)}
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                     metodoPagoSeleccionado === metodo.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{metodo.icono}</span>
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">{metodo.nombre}</div>
+                      <div className="font-semibold text-gray-900">
+                        {metodo.nombre}
+                      </div>
                       {metodoPagoSeleccionado === metodo.id && (
-                        <div className="text-sm text-green-600">✓ Seleccionado</div>
+                        <div className="text-sm text-green-600">
+                          ✓ Seleccionado
+                        </div>
                       )}
                     </div>
-                    <div className={`w-5 h-5 rounded-full border-2 ${
-                      metodoPagoSeleccionado === metodo.id
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'border-gray-300'
-                    }`}></div>
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 ${
+                        metodoPagoSeleccionado === metodo.id
+                          ? "bg-blue-500 border-blue-500"
+                          : "border-gray-300"
+                      }`}
+                    ></div>
                   </div>
                 </div>
               ))}
@@ -160,7 +190,7 @@ export default function CourseCatalogScreen({ onNavigate }) {
                 disabled={inscribiendo}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-400"
               >
-                {inscribiendo ? 'Procesando...' : 'Confirmar Pago'}
+                {inscribiendo ? "Procesando..." : "Confirmar Pago"}
               </button>
             </div>
           </div>
@@ -174,9 +204,13 @@ export default function CourseCatalogScreen({ onNavigate }) {
     if (!factura) return null;
 
     // Asegurar que los valores sean números válidos
-    const precio = Number(factura.inscripcion?.precio) || Number(factura.curso?.costo) || 0;
+    const precio =
+      Number(factura.inscripcion?.precio) || Number(factura.curso?.costo) || 0;
     const precioFinal = Number(factura.inscripcion?.precio_final) || precio;
-    const nombreCurso = factura.curso?.nombre_curso || factura.inscripcion?.curso?.nombre_curso || 'Curso';
+    const nombreCurso =
+      factura.curso?.nombre_curso ||
+      factura.inscripcion?.curso?.nombre_curso ||
+      "Curso";
     const metodoPago = factura.pago?.metodo_pago || metodoPagoSeleccionado;
 
     return (
@@ -185,8 +219,12 @@ export default function CourseCatalogScreen({ onNavigate }) {
           <div className="p-6">
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">🎉</div>
-              <h2 className="text-xl font-bold text-gray-900">¡Pago Exitoso!</h2>
-              <p className="text-green-600 mt-1">Tu inscripción ha sido confirmada</p>
+              <h2 className="text-xl font-bold text-gray-900">
+                ¡Pago Exitoso!
+              </h2>
+              <p className="text-green-600 mt-1">
+                Tu inscripción ha sido confirmada
+              </p>
             </div>
 
             <div className="space-y-3 mb-6">
@@ -194,34 +232,44 @@ export default function CourseCatalogScreen({ onNavigate }) {
                 <span className="text-gray-600">Curso:</span>
                 <span className="font-semibold">{nombreCurso}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Método de pago:</span>
                 <span className="font-medium capitalize">
-                  {metodosPago.find(m => m.id === metodoPago)?.icono} {metodoPago?.toLowerCase()}
+                  {metodosPago.find((m) => m.id === metodoPago)?.icono}{" "}
+                  {metodoPago?.toLowerCase()}
                 </span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Fecha:</span>
-                <span>{new Date().toLocaleDateString('es-ES')}</span>
+                <span>{new Date().toLocaleDateString("es-ES")}</span>
               </div>
-              
+
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total pagado:</span>
                   {/* CORRECCIÓN: Asegurar que precioFinal sea un número antes de usar toFixed() */}
-                  <span className="text-green-600">${(precioFinal || 0).toFixed(2)}</span>
+                  <span className="text-green-600">
+                    ${(precioFinal || 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-blue-800 mb-2">Detalles de la Transacción</h3>
+              <h3 className="font-semibold text-blue-800 mb-2">
+                Detalles de la Transacción
+              </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-blue-700">N° de Transacción:</span>
-                  <span className="font-mono">#{factura.pago?.id_pago || factura.inscripcion?.id_inscripcion || 'N/A'}</span>
+                  <span className="font-mono">
+                    #
+                    {factura.pago?.id_pago ||
+                      factura.inscripcion?.id_inscripcion ||
+                      "N/A"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-blue-700">Estado:</span>
@@ -234,7 +282,7 @@ export default function CourseCatalogScreen({ onNavigate }) {
               <button
                 onClick={() => {
                   onClose();
-                  onNavigate('my-courses');
+                  onNavigate("my-courses");
                 }}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
               >
@@ -279,7 +327,9 @@ export default function CourseCatalogScreen({ onNavigate }) {
               ) : errorPuntos ? (
                 <span className="text-red-600 text-sm">{errorPuntos}</span>
               ) : (
-                <span className="font-semibold text-gray-900">{puntos || 0} puntos</span>
+                <span className="font-semibold text-gray-900">
+                  {puntos || 0} puntos
+                </span>
               )}
             </div>
 
@@ -347,18 +397,22 @@ export default function CourseCatalogScreen({ onNavigate }) {
             {cursosRenderizados.length > 0 ? (
               cursosRenderizados.map((course) => {
                 const inscrito = estaInscrito(course.id_curso);
-                const disponible = course.estado_disponibilidad === 'ACTIVO';
-                
+                const disponible = course.estado_disponibilidad === "ACTIVO";
+
                 return (
                   <div
                     key={`curso-${course.id_curso}`}
                     className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow"
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        course.modalidad === 'VIRTUAL' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {course.modalidad || 'Curso'}
+                      <span
+                        className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                          course.modalidad === "VIRTUAL"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {course.modalidad || "Curso"}
                       </span>
                       {inscrito && (
                         <span className="text-xs font-medium text-green-600">
@@ -390,27 +444,28 @@ export default function CourseCatalogScreen({ onNavigate }) {
                     </div>
 
                     <button
-                      onClick={() => handleSeleccionarPago(course)}
-                      disabled={inscrito || inscribiendo || !disponible}
+                      onClick={() =>
+                        onNavigate("course-detail", {
+                          courseId: course.id_curso,
+                        })
+                      }
                       className={`w-full mt-4 py-3 rounded-lg font-medium ${
-                        inscrito 
-                          ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                        inscrito
+                          ? "bg-green-100 text-green-700 cursor-not-allowed"
                           : !disponible
-                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                          ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                           : inscribiendo
-                          ? 'bg-blue-500 text-white cursor-wait'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                          ? "bg-blue-500 text-white cursor-wait"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
                       }`}
                     >
-                      {inscribiendo ? (
-                        'Procesando...'
-                      ) : inscrito ? (
-                        'Inscrito'
-                      ) : !disponible ? (
-                        'No disponible'
-                      ) : (
-                        'Inscribirse'
-                      )}
+                      {inscribiendo
+                        ? "Procesando..."
+                        : inscrito
+                        ? "Inscrito"
+                        : !disponible
+                        ? "No disponible"
+                        : "Ver Detalles"}
                     </button>
                   </div>
                 );
@@ -429,7 +484,7 @@ export default function CourseCatalogScreen({ onNavigate }) {
 
       {/* MODALES - FUERA DEL FLUJO PRINCIPAL DE RENDER */}
       {mostrarSeleccionPago && (
-        <SeleccionPagoModal 
+        <SeleccionPagoModal
           curso={cursoSeleccionado}
           onClose={() => {
             setMostrarSeleccionPago(false);
@@ -440,9 +495,9 @@ export default function CourseCatalogScreen({ onNavigate }) {
       )}
 
       {mostrarFactura && (
-        <FacturaModal 
-          factura={mostrarFactura} 
-          onClose={() => setMostrarFactura(null)} 
+        <FacturaModal
+          factura={mostrarFactura}
+          onClose={() => setMostrarFactura(null)}
         />
       )}
     </div>
