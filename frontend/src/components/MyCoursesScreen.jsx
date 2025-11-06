@@ -463,29 +463,24 @@ export default function MyCoursesScreen({ onNavigate }) {
                   className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <span
-                      className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        inscripcion.curso?.modalidad === "VIRTUAL"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {inscripcion.curso?.modalidad || "Curso"}
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                      inscripcion.curso?.modalidad === 'VIRTUAL' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {inscripcion.curso?.modalidad || 'Curso'}
                     </span>
-                    <span
-                      className={`text-xs font-medium flex items-center gap-1 ${estado.color}`}
-                    >
+                    <span className={`text-xs font-medium flex items-center gap-1 ${estado.color}`}>
                       <EstadoIcon />
                       {estado.texto}
                     </span>
                   </div>
+
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {inscripcion.curso?.nombre_curso || "Curso sin nombre"}
+                    {inscripcion.curso?.nombre_curso || 'Curso sin nombre'}
                   </h3>
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {inscripcion.curso?.descripcion ||
-                      "Sin descripción disponible"}
+                    {inscripcion.curso?.descripcion || "Sin descripción disponible"}
                   </p>
+
                   {/* BARRA DE PROGRESO */}
                   <div className="mb-4">
                     <div className="flex justify-between text-sm text-gray-600 mb-1">
@@ -493,37 +488,28 @@ export default function MyCoursesScreen({ onNavigate }) {
                       <span>{inscripcion.progreso}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
+                      <div 
                         className={`h-2 rounded-full transition-all ${
-                          esCompletado ? "bg-green-600" : "bg-blue-600"
+                          esCompletado ? 'bg-green-600' : 'bg-blue-600'
                         }`}
                         style={{ width: `${inscripcion.progreso}%` }}
                       ></div>
                     </div>
                   </div>
+
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
                     <div className="flex items-center gap-1">
                       <span>📅</span>
-                      <span>
-                        Inscrito:{" "}
-                        {new Date(
-                          inscripcion.fecha_inscripcion
-                        ).toLocaleDateString("es-ES")}
-                      </span>
+                      <span>Inscrito: {new Date(inscripcion.fecha_inscripcion).toLocaleDateString('es-ES')}</span>
                     </div>
                     {inscripcion.fecha_ultima_actualizacion && (
                       <div className="flex items-center gap-1">
                         <span>🕒</span>
-                        <span>
-                          Última actividad:{" "}
-                          {new Date(
-                            inscripcion.fecha_ultima_actualizacion
-                          ).toLocaleDateString("es-ES")}
-                        </span>
+                        <span>Última actividad: {new Date(inscripcion.fecha_ultima_actualizacion).toLocaleDateString('es-ES')}</span>
                       </div>
                     )}
                   </div>
-                  // En la tarjeta de curso, agregar botón para ver detalles:
+
                   <div className="flex gap-2">
                     {esCompletado ? (
                       <button
@@ -539,16 +525,14 @@ export default function MyCoursesScreen({ onNavigate }) {
                         className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
                       >
                         <TextPlayIcon />
-                        {inscripcion.progreso > 0 ? "Continuar" : "Comenzar"}
+                        {inscripcion.progreso > 0 ? 'Continuar' : 'Comenzar'}
                       </button>
                     )}
-                    <button
-                      onClick={() =>
-                        onNavigate("course-detail", {
-                          courseId: inscripcion.curso?.id_curso,
-                        })
-                      }
+                    {/* 🆕 BOTÓN PARA VER DETALLES DEL CURSO */}
+                    <button 
+                      onClick={() => onNavigate("course-detail", { courseId: inscripcion.curso?.id_curso })}
                       className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      title="Ver detalles del curso"
                     >
                       <span>👁️</span>
                     </button>
