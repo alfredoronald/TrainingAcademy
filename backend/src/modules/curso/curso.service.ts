@@ -10,101 +10,54 @@ import { TipoCurso } from '../tipo-curso/tipo-curso.entity';
 @Injectable()
 export class CursoService {
   constructor(
-    @InjectRepository(Curso)
-    private readonly cursoRepo: Repository<Curso>,
+  @InjectRepository(Curso)
+  private readonly cursoRepo: Repository<Curso>,
 
-    @InjectRepository(Usuario)
-    private readonly usuarioRepo: Repository<Usuario>,
+  @InjectRepository(Usuario)
+  private readonly usuarioRepo: Repository<Usuario>,
 
-    @InjectRepository(TipoCurso)
-    private readonly tipoCursoRepo: Repository<TipoCurso>,
-  ) {}
+  @InjectRepository(TipoCurso)
+  private readonly tipoCursoRepo: Repository<TipoCurso>, // 👈 agregado
+) {}
 
-  // CREAR CURSO - SOLUCIÓN DEFINITIVA
-  async create(createCursoDto: CreateCursoDto): Promise<Curso> {
-    console.log('Datos recibidos para crear curso:', createCursoDto);
 
-    const { id_docente, id_tipo_curso, ...cursoData } = createCursoDto;
+  // Crear curso
+ async create(createCursoDto: CreateCursoDto): Promise<Curso> {
+  console.log('Datos recibidos para crear curso:', createCursoDto);
 
-    // Validar docente
-    const docente = await this.usuarioRepo.findOne({ 
-      where: { id_usuario: id_docente } 
+  // 🚫 Evita usar un id_curso manual (PostgreSQL lo genera solo)
+  delete (createCursoDto as any).id_curso;
+
+  const { id_docente, id_tipo_curso, ...cursoData } = createCursoDto;
+
+  const docente = await this.usuarioRepo.findOne({ where: { id_usuario: id_docente } });
+  if (!docente) throw new NotFoundException('Docente no encontrado');
+
+  // 🔹 Si no se envía tipo de curso, crear uno por defecto
+  let tipoCurso;
+  if (id_tipo_curso) {
+    tipoCurso = await this.tipoCursoRepo.findOne({ where: { id_tipo_curso } });
+    if (!tipoCurso) throw new NotFoundException('Tipo de curso no encontrado');
+  } else {
+    tipoCurso = this.tipoCursoRepo.create({
+      nombre_tipo_curso: 'General',
+      descripcion: 'Tipo de curso generado automáticamente',
     });
-    if (!docente) {
-      throw new NotFoundException('Docente no encontrado');
-    }
-
-    // Validar tipo de curso
-    const tipoCurso = await this.tipoCursoRepo.findOne({ 
-      where: { id_tipo_curso } 
-    });
-    if (!tipoCurso) {
-      throw new NotFoundException('Tipo de curso no encontrado');
-    }
-
-    // 🔥 SOLUCIÓN: Crear el curso SIN forzar ID
-    // TypeORM automáticamente usará el SERIAL de PostgreSQL
-    const nuevoCurso = this.cursoRepo.create({
-      ...cursoData,
-      id_usuario_docente: id_docente,  // Usar el nombre exacto de la columna
-      id_tipo_curso: id_tipo_curso,    // Usar el nombre exacto de la columna
-    });
-
-    try {
-      const cursoGuardado = await this.cursoRepo.save(nuevoCurso);
-      console.log('Curso creado exitosamente con ID:', cursoGuardado.id_curso);
-      return cursoGuardado;
-    } catch (error) {
-      console.error('Error al guardar curso:', error);
-      
-      // Si sigue el error de duplicado, usar query nativa
-      if (error.code === '23505') {
-        return await this.createWithNativeQuery(createCursoDto);
-      }
-      
-      throw error;
-    }
+    await this.tipoCursoRepo.save(tipoCurso);
   }
 
-  // Método de respaldo con query nativa
-  private async createWithNativeQuery(createCursoDto: CreateCursoDto): Promise<Curso> {
-    const { 
-      nombre_curso, 
-      descripcion, 
-      duracion, 
-      cupos, 
-      costo, 
-      modalidad, 
-      estado_disponibilidad,
-      id_docente, 
-      id_tipo_curso 
-    } = createCursoDto;
+  // 🔹 Crear el curso con las relaciones correctas
+  const nuevoCurso = this.cursoRepo.create({
+    ...cursoData,
+    docente,
+    tipo_curso: tipoCurso,
+  });
 
-    // Query nativa que respeta el auto-increment
-    const result = await this.cursoRepo.query(
-      `INSERT INTO curso (
-        nombre_curso, descripcion, duracion, cupos, costo, 
-        modalidad, estado_disponibilidad, id_usuario_docente, id_tipo_curso
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-      RETURNING *`,
-      [
-        nombre_curso, descripcion, duracion, cupos, costo,
-        modalidad, estado_disponibilidad, id_docente, id_tipo_curso
-      ]
-    );
+  const cursoGuardado = await this.cursoRepo.save(nuevoCurso);
+  return cursoGuardado;
+}
 
-    // Buscar el curso completo con relaciones
-    const cursoCreado = await this.cursoRepo.findOne({
-      where: { id_curso: result[0].id_curso },
-      relations: ['docente', 'tipo_curso']
-    });
 
-    if (!cursoCreado) {
-      throw new NotFoundException('Error al crear curso');
-    }
-
-    return cursoCreado;
-  }
 
   // Obtener todos los cursos
   async findAll(): Promise<any[]> {
@@ -133,9 +86,7 @@ export class CursoService {
     if (!curso) throw new NotFoundException('Curso no encontrado');
 
     if (updateCursoDto.id_docente) {
-      const docente = await this.usuarioRepo.findOne({ 
-        where: { id_usuario: updateCursoDto.id_docente } 
-      });
+      const docente = await this.usuarioRepo.findOne({ where: { id_usuario: updateCursoDto.id_docente } });
       if (!docente) throw new NotFoundException('Docente no encontrado');
       curso.docente = docente;
     }
@@ -163,17 +114,21 @@ export class CursoService {
       modalidad: curso.modalidad,
       costo: curso.costo,
       cupos: curso.cupos,
-      docente: curso.docente ? {
-        id_usuario: curso.docente.id_usuario,
-        nombre: curso.docente.nombre,
-        apellido: curso.docente.apellido,
-        correo_electronico: curso.docente.correo_electronico,
-      } : null,
-      tipo_curso: curso.tipo_curso ? {
-        id_tipo_curso: curso.tipo_curso.id_tipo_curso,
-        nombre_tipo_curso: curso.tipo_curso.nombre_tipo_curso,
-        descripcion: curso.tipo_curso.descripcion,
-      } : null,
+      docente: curso.docente
+        ? {
+            id_usuario: curso.docente.id_usuario,
+            nombre: curso.docente.nombre,
+            apellido: curso.docente.apellido,
+            correo_electronico: curso.docente.correo_electronico,
+          }
+        : null,
+      tipo_curso: curso.tipo_curso
+        ? {
+            id_tipo_curso: curso.tipo_curso.id_tipo_curso,
+            nombre_tipo_curso: curso.tipo_curso.nombre_tipo_curso,
+            descripcion: curso.tipo_curso.descripcion,
+          }
+        : null,
       horarios: curso.horarios || [],
       modulos: curso.modulos || [],
     };
