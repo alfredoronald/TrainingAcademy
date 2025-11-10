@@ -62,7 +62,10 @@ export default function Profile({ onNavigate }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" strokeWidth={1.5} />
+                <GraduationCap
+                  className="w-6 h-6 text-white"
+                  strokeWidth={1.5}
+                />
               </div>
               <a
                 className="text-xl font-semibold text-gray-900 cursor-pointer"
@@ -80,7 +83,9 @@ export default function Profile({ onNavigate }) {
                 ) : errorPuntos ? (
                   <span className="text-red-600">{errorPuntos}</span>
                 ) : (
-                  <span className="font-semibold text-gray-900">{puntos} puntos</span>
+                  <span className="font-semibold text-gray-900">
+                    {puntos} puntos
+                  </span>
                 )}
               </div>
 
@@ -115,7 +120,9 @@ export default function Profile({ onNavigate }) {
       {/* MAIN */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-10">
-          <h1 className="text-4xl font-semibold text-blue-600 mb-3">Mi Perfil</h1>
+          <h1 className="text-4xl font-semibold text-blue-600 mb-3">
+            Mi Perfil
+          </h1>
           <p className="text-lg text-gray-600">
             Gestiona tu información y revisa tu progreso
           </p>
@@ -159,7 +166,9 @@ export default function Profile({ onNavigate }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50 rounded-xl p-6">
-                  <p className="text-sm text-gray-600 mb-2">Cursos completados</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Cursos completados
+                  </p>
                   <p className="text-4xl font-bold text-blue-600">
                     {user.cursosCompletados || 0}
                   </p>
@@ -203,11 +212,14 @@ export default function Profile({ onNavigate }) {
                         {ui.insignia?.name || ui.insignia?.nombre || "Insignia"}
                       </span>
                       <span className="text-xs text-gray-600">
-                        {ui.insignia?.description || ui.insignia?.descripcion || ""}
+                        {ui.insignia?.description ||
+                          ui.insignia?.descripcion ||
+                          ""}
                       </span>
                       {ui.fecha_otorgada && (
                         <span className="text-xs text-gray-500 mt-2">
-                          Obtenida: {new Date(ui.fecha_otorgada).toLocaleDateString()}
+                          Obtenida:{" "}
+                          {new Date(ui.fecha_otorgada).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -216,7 +228,9 @@ export default function Profile({ onNavigate }) {
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-xl">
                   <Medal className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Aún no has obtenido insignias</p>
+                  <p className="text-gray-600 mb-2">
+                    Aún no has obtenido insignias
+                  </p>
                   <p className="text-sm text-gray-500">
                     Completa cursos y actividades para ganar insignias
                   </p>
@@ -236,33 +250,59 @@ export default function Profile({ onNavigate }) {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <BarChart3 className="w-6 h-6 text-gray-900" />
-                <h2 className="text-xl font-semibold text-gray-900">Análisis</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Análisis
+                </h2>
               </div>
 
               <p className="text-gray-600 mb-6">
                 Revisa tu progreso semanal y estadísticas de aprendizaje.
               </p>
 
-              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                Ver Reporte Semanal
+              <button
+                onClick={() => onNavigate("reporte-semanal")}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  padding: "12px 24px",
+                  border: "none",
+                  borderRadius: "25px",
+                  cursor: "pointer",
+                  fontSize: "1em",
+                  fontWeight: "600",
+                  transition: "all 0.3s ease",
+                  marginTop: "15px",
+                }}
+              >
+                📊 Ver Reporte Semanal
               </button>
 
               {/* 🔹 ESTADÍSTICAS RÁPIDAS DE INSIGNIAS */}
               {usuarioInsignias.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-3">Progreso de Insignias</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Progreso de Insignias
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Insignias obtenidas:</span>
-                      <span className="font-semibold">{usuarioInsignias.length}</span>
+                      <span className="text-gray-600">
+                        Insignias obtenidas:
+                      </span>
+                      <span className="font-semibold">
+                        {usuarioInsignias.length}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Última insignia:</span>
                       <span className="font-semibold">
-                        {usuarioInsignias.length > 0 
-                          ? new Date(usuarioInsignias[usuarioInsignias.length - 1].fecha_otorgada).toLocaleDateString()
-                          : "N/A"
-                        }
+                        {usuarioInsignias.length > 0
+                          ? new Date(
+                              usuarioInsignias[
+                                usuarioInsignias.length - 1
+                              ].fecha_otorgada
+                            ).toLocaleDateString()
+                          : "N/A"}
                       </span>
                     </div>
                   </div>

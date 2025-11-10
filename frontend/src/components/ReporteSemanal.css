@@ -1,0 +1,472 @@
+.reporte-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Header */
+.reporte-header {
+  text-align: center;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.reporte-header h1 {
+  margin: 0 0 10px 0;
+  font-size: 2.8em;
+  font-weight: 700;
+}
+
+.reporte-header p {
+  margin: 0 0 25px 0;
+  opacity: 0.9;
+  font-size: 1.2em;
+  font-weight: 300;
+}
+
+.btn-refresh {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid white;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.btn-refresh:hover {
+  background: white;
+  color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Tabs Navigation */
+.tabs-navigation {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  background: white;
+  padding: 10px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  gap: 10px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 15px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  color: #666;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.tab-btn:hover:not(.active) {
+  background: #f0f2f5;
+  color: #333;
+}
+
+/* Secciones */
+.seccion-reporte {
+  background: white;
+  margin-bottom: 30px;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.seccion-reporte h2 {
+  color: #2c3e50;
+  border-bottom: 3px solid #667eea;
+  padding-bottom: 15px;
+  margin-bottom: 25px;
+  font-size: 1.8em;
+}
+
+/* Stats Grid Personal */
+.stats-grid-personal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.stat-card.personal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px 25px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  transition: transform 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card.personal::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: rotate(45deg);
+  transition: all 0.6s ease;
+}
+
+.stat-card.personal:hover::before {
+  transform: rotate(45deg) translate(50%, 50%);
+}
+
+.stat-card.personal:hover {
+  transform: translateY(-8px);
+}
+
+.stat-card .stat-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+  opacity: 0.9;
+}
+
+.stat-card .stat-value {
+  font-size: 2.8em;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.stat-card .stat-label {
+  font-size: 1em;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Listas de Items */
+.reporte-grupo {
+  margin-bottom: 40px;
+}
+
+.reporte-grupo h3 {
+  color: #34495e;
+  margin-bottom: 20px;
+  font-size: 1.4em;
+  padding-left: 10px;
+  border-left: 4px solid #667eea;
+}
+
+.lista-items {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 20px;
+  border: 2px solid #e9ecef;
+}
+
+.item-lista {
+  display: flex;
+  align-items: center;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+.item-lista:hover {
+  transform: translateX(8px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.item-lista.destacado {
+  border-left-color: #e74c3c;
+}
+
+.item-lista.recompensa {
+  border-left-color: #f39c12;
+}
+
+.item-ranking {
+  background: #667eea;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 20px;
+  flex-shrink: 0;
+}
+
+.item-info {
+  flex: 1;
+}
+
+.item-nombre {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.1em;
+  margin-bottom: 5px;
+}
+
+.item-desc {
+  display: block;
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+.item-badge {
+  background: #e74c3c;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.item-badge.recompensa {
+  background: #f39c12;
+}
+
+.item-puntaje {
+  background: #27ae60;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.item-puntaje.top-1 {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #333;
+}
+
+/* Asistencia */
+.asistencia-header {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+  color: white;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.total-usuarios {
+  font-size: 1.3em;
+}
+
+.total-label {
+  opacity: 0.9;
+  margin-right: 10px;
+}
+
+.total-value {
+  font-weight: 800;
+  font-size: 1.4em;
+}
+
+.lista-asistencia {
+  display: grid;
+  gap: 15px;
+}
+
+.item-asistencia {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-left: 4px solid #27ae60;
+}
+
+.usuario-info {
+  flex: 1;
+}
+
+.usuario-nombre {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+.asistencia-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.asistencia-presente {
+  color: #27ae60;
+  font-weight: 500;
+}
+
+.asistencia-ausente {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+.asistencia-total {
+  text-align: center;
+  min-width: 100px;
+}
+
+.porcentaje-asistencia {
+  display: block;
+  font-size: 1.8em;
+  font-weight: 800;
+  color: #27ae60;
+}
+
+.asistencia-label {
+  font-size: 0.8em;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Progreso Detalle */
+.progreso-detalle {
+  background: #f8f9fa;
+  padding: 25px;
+  border-radius: 15px;
+  margin-top: 20px;
+}
+
+.progreso-detalle h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.3em;
+}
+
+.detalle-grid {
+  display: grid;
+  gap: 15px;
+}
+
+.detalle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-radius: 10px;
+}
+
+.detalle-label {
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.detalle-valor {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.estado-bueno {
+  color: #27ae60;
+  background: #d5f4e6;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.9em;
+}
+
+/* Footer */
+.reporte-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding: 25px;
+  color: #7f8c8d;
+  border-top: 2px solid #e9ecef;
+  font-style: italic;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #667eea;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .reporte-container {
+    padding: 10px;
+  }
+  
+  .stats-grid-personal {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabs-navigation {
+    flex-direction: column;
+  }
+  
+  .item-lista {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .item-ranking {
+    align-self: flex-start;
+  }
+  
+  .item-asistencia {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .asistencia-total {
+    align-self: flex-end;
+  }
+  
+  .reporte-header h1 {
+    font-size: 2em;
+  }
+}

@@ -57,7 +57,9 @@ import { RecompensaModule } from './modules/recompensa/recompensa.module';
 import { CanjeModule } from './modules/canje/canje.module';
 import { RankingModule } from './modules/ranking/ranking.module';
 import { InsigniaModule } from './modules/insignia/insignia.module';
+import { ReportesModule } from './modules/reportes/reportes.module';
 import { UsuarioInsigniaModule } from './modules/usuario-insignia/usuario-insignia.module';
+
 import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
@@ -80,7 +82,7 @@ import { AuthModule } from './auth/auth.module';
     CursoModule, HorarioCursoModule, AsistenciaModule, TipoCursoModule, InscripcionModule,
     PagoModule, ProgresoCursoModule, ModuloModule, ProgresoModuloModule, TemarioModule,
     ProgresoTemaModule, ForoModule, MensajeModule, EvaluacionModule, PuntajeModule,
-    RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule,AuthModule
+    RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule,ReportesModule,AuthModule
   
   ],
 
