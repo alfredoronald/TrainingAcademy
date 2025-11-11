@@ -1,19 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
+import { Canje } from '../canje/canje.entity';
 
-@Entity({ name: 'recompensa' })
+@Entity('recompensa')
 export class Recompensa {
-  @PrimaryGeneratedColumn({ name: 'id_recompensa' })
+  @PrimaryColumn({ name: 'id_recompensa' })
   id_recompensa: number;
 
-  @Column({ length: 200 })
+  @Column({ name: 'nombre', length: 200 })
   nombre: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'descripcion', type: 'text', nullable: true })
   descripcion: string;
 
-  @Column({ type: 'int' })
+  @Column({ name: 'puntos_requeridos' })
   puntos_requeridos: number;
 
-  @Column({ type: 'text', nullable: true })
-  criterios: string;
+  @Column({ name: 'criterio' })
+  criterio: number;
+
+  @OneToMany(() => Canje, canje => canje.recompensa)
+  canjes: Canje[];
 }

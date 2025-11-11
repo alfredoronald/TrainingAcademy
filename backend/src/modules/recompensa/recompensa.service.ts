@@ -1,17 +1,44 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Recompensa } from './recompensa.entity';
-import { Canje } from '../canje/canje.entity';
 import { Repository } from 'typeorm';
+import { Recompensa } from './recompensa.entity';
 
 @Injectable()
 export class RecompensaService {
   constructor(
-    @InjectRepository(Recompensa) private repo: Repository<Recompensa>,
-    @InjectRepository(Canje) private canjeRepo: Repository<Canje>
+    @InjectRepository(Recompensa)
+    private readonly recompensaRepository: Repository<Recompensa>,
   ) {}
 
-  create(data: Partial<Recompensa>) { return this.repo.save(this.repo.create(data)); }
-  findAll() { return this.repo.find(); }
-  canjear(data: Partial<Canje>) { return this.canjeRepo.save(this.canjeRepo.create(data)); }
+  async findAll(): Promise<Recompensa[]> {
+    console.log('🔍 Buscando todas las recompensas en la BD...');
+    try {
+      const recompensas = await this.recompensaRepository.find();
+      console.log(`✅ Encontradas ${recompensas.length} recompensas`);
+      return recompensas;
+    } catch (error) {
+      console.error('❌ Error buscando recompensas:', error);
+      throw error;
+    }
+  }
+
+  // OPCIÓN 1: Retornar Recompensa o null (Recomendado si no usas findOne)
+  async findOne(id: number): Promise<Recompensa | null> {
+    return await this.recompensaRepository.findOne({
+      where: { id_recompensa: id }
+    });
+  }
+
+  // OPCIÓN 2: Lanzar excepción si no encuentra
+  async findOneOrFail(id: number): Promise<Recompensa> {
+    const recompensa = await this.recompensaRepository.findOne({
+      where: { id_recompensa: id }
+    });
+    
+    if (!recompensa) {
+      throw new NotFoundException(`Recompensa con ID ${id} no encontrada`);
+    }
+    
+    return recompensa;
+  }
 }
