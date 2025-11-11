@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal } from "lucide-react";
+import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal, Gift } from "lucide-react";
 import { useCursos } from "../hooks/useCursos";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
 import { useInscripciones } from "../hooks/useInscripciones";
@@ -270,8 +270,11 @@ export default function CourseCatalogScreen({ onNavigate }) {
           </div>
 
           <div className="flex items-center gap-6">
-            {/* INSIGNIA DE PUNTOS */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg">
+            {/* INSIGNIA DE PUNTOS - AHORA REDIRIGE A RECOMPENSAS */}
+            <button 
+              onClick={() => onNavigate("rewards")}
+              className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+            >
               <Award className="w-5 h-5 text-green-600" />
               {loadingPuntos ? (
                 <span className="text-gray-500 text-sm">Cargando...</span>
@@ -280,7 +283,16 @@ export default function CourseCatalogScreen({ onNavigate }) {
               ) : (
                 <span className="font-semibold text-gray-900">{puntos || 0} puntos</span>
               )}
-            </div>
+            </button>
+
+            {/* BOTÓN RECOMPENSAS - NUEVA PÁGINA SEPARADA */}
+            <button
+              onClick={() => onNavigate("rewards")}
+              className="hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Gift className="w-5 h-5 text-purple-600" />
+              <span className="text-gray-700 font-medium">Recompensas</span>
+            </button>
 
             {/* BOTÓN MIS CURSOS */}
             <button
@@ -444,7 +456,7 @@ export default function CourseCatalogScreen({ onNavigate }) {
         )}
       </main>
 
-      {/* MODALES - FUERA DEL FLUJO PRINCIPAL DE RENDER */}
+      {/* MODALES - SOLO LOS DE PAGO Y FACTURA */}
       {mostrarSeleccionPago && (
         <SeleccionPagoModal 
           curso={cursoSeleccionado}
