@@ -1,20 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
-import { Usuario } from '../usuario/usuario.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Recompensa } from '../recompensa/recompensa.entity';
 
-@Entity({ name: 'canje' })
+@Entity('canje')
 export class Canje {
-  @PrimaryGeneratedColumn({ name: 'id_canje' })
+  @PrimaryGeneratedColumn({ name: 'id_canje' }) // ← PrimaryGeneratedColumn
   id_canje: number;
 
-  @ManyToOne(() => Usuario)
-  @JoinColumn({ name: 'id_usuario' })
-  usuario: Usuario;
+  @Column({ name: 'id_usuario' })
+  id_usuario: number;
 
-  @ManyToOne(() => Recompensa)
+  @Column({ name: 'id_recompensa' })
+  id_recompensa: number;
+
+  @Column({ name: 'fecha_canje', type: 'date', default: () => 'CURRENT_DATE' })
+  fecha_canje: string;
+
+  @ManyToOne(() => Recompensa, recompensa => recompensa.canjes)
   @JoinColumn({ name: 'id_recompensa' })
   recompensa: Recompensa;
-
-  @CreateDateColumn({ name: 'fecha_canje', type: 'date' })
-  fecha_canje: string;
 }
