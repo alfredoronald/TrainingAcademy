@@ -18,6 +18,7 @@ import AdminDashboard from './components/admin-view.jsx';
 import MyCoursesScreen from './components/MyCoursesScreen';
 import CourseDetail from './components/course-detail.jsx';
 import RewardsScreen from './components/RewardsScreen';
+import ReporteSemanal from "./components/ReporteSemanal";
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -221,6 +222,9 @@ function App() {
         return (
           <ProfileScreen {...commonProps} />
         );
+
+      case "reporte-semanal":
+        return <ReporteSemanal {...commonProps} />;
 
       case 'teacher-dashboard':
         return (

@@ -59,14 +59,15 @@ import { RankingModule } from './modules/ranking/ranking.module';
 import { InsigniaModule } from './modules/insignia/insignia.module';
 import { UsuarioInsigniaModule } from './modules/usuario-insignia/usuario-insignia.module';
 import { AuthModule } from './auth/auth.module';
+import { ReportesModule } from './modules/reportes/reportes.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
+      port: parseInt(process.env.DB_PORT || '5433', 10),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'j1234',
+      password: process.env.DB_PASS || 'password',
       database: process.env.DB_NAME || 'training_academy',
       entities: [
         Usuario, Rol, Permiso, DetalleRol, PermisoRol, Curso, HorarioCurso, Asistencia, TipoCurso,
@@ -80,7 +81,7 @@ import { AuthModule } from './auth/auth.module';
     CursoModule, HorarioCursoModule, AsistenciaModule, TipoCursoModule, InscripcionModule,
     PagoModule, ProgresoCursoModule, ModuloModule, ProgresoModuloModule, TemarioModule,
     ProgresoTemaModule, ForoModule, MensajeModule, EvaluacionModule, PuntajeModule,
-    RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule,AuthModule
+    RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule, ReportesModule,AuthModule
   
   ],
 
