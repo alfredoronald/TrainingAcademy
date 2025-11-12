@@ -42,25 +42,28 @@ export default function CourseCatalogScreen({ onNavigate }) {
   ];
 
   // FUNCIÓN PARA MOSTRAR SELECCIÓN DE PAGO
-  const handleSeleccionarPago = (curso) => {
-    if (!idUsuario) {
-      alert('Debes iniciar sesión para inscribirte');
-      return;
-    }
+ // Dentro de handleSeleccionarPago
+const handleSeleccionarPago = (curso) => {
+  if (!idUsuario) {
+    alert('Debes iniciar sesión para inscribirte');
+    return;
+  }
 
-    if (estaInscrito(curso.id_curso)) {
-      alert('Ya estás inscrito en este curso');
-      return;
-    }
+  if (estaInscrito(curso.id_curso)) {
+    alert('Ya estás inscrito en este curso');
+    return;
+  }
 
-    if (curso.estado_disponibilidad !== 'ACTIVO') {
-      alert('Este curso no está disponible actualmente');
-      return;
-    }
+  if (curso.estado_disponibilidad !== 'ACTIVO') {
+    alert('Este curso no está disponible actualmente');
+    return;
+  }
 
-    setCursoSeleccionado(curso);
-    setMostrarSeleccionPago(true);
-  };
+  setCursoSeleccionado(curso);
+  setMetodoPagoSeleccionado('TARJETA'); // Reiniciar selección al abrir un nuevo curso
+  setMostrarSeleccionPago(true);
+};
+
 
   // FUNCIÓN PARA CONFIRMAR INSCRIPCIÓN (MEJORADA)
   const handleConfirmarInscripcion = async () => {
@@ -170,87 +173,92 @@ export default function CourseCatalogScreen({ onNavigate }) {
   };
 
   // COMPONENTE MODAL DE FACTURA CORREGIDO
-  const FacturaModal = ({ factura, onClose }) => {
-    if (!factura) return null;
+ // Dentro de FacturaModal
+const FacturaModal = ({ factura, onClose }) => {
+  if (!factura) return null;
 
-    // Asegurar que los valores sean números válidos
-    const precio = Number(factura.inscripcion?.precio) || Number(factura.curso?.costo) || 0;
-    const precioFinal = Number(factura.inscripcion?.precio_final) || precio;
-    const nombreCurso = factura.curso?.nombre_curso || factura.inscripcion?.curso?.nombre_curso || 'Curso';
-    const metodoPago = factura.pago?.metodo_pago || metodoPagoSeleccionado;
+  const curso = factura.curso || {};
+  const pago = factura.pago || {};
+  const inscripcion = factura.inscripcion || {};
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-md">
-          <div className="p-6">
-            <div className="text-center mb-6">
-              <div className="text-4xl mb-2">🎉</div>
-              <h2 className="text-xl font-bold text-gray-900">¡Pago Exitoso!</h2>
-              <p className="text-green-600 mt-1">Tu inscripción ha sido confirmada</p>
+  const precio = Number(inscripcion.precio) || Number(curso.costo) || 0;
+  const precioFinal = Number(inscripcion.precio_final) || precio;
+  const nombreCurso = curso.nombre_curso || 'Curso';
+  const metodoPago = pago.metodo_pago || metodoPagoSeleccionado;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md">
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-2">🎉</div>
+            <h2 className="text-xl font-bold text-gray-900">¡Pago Exitoso!</h2>
+            <p className="text-green-600 mt-1">Tu inscripción ha sido confirmada</p>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Curso:</span>
+              <span className="font-semibold">{nombreCurso}</span>
             </div>
 
-            <div className="space-y-3 mb-6">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Método de pago:</span>
+              <span className="font-medium capitalize">
+                {metodosPago.find(m => m.id === metodoPago)?.icono} {metodoPago?.toLowerCase()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-600">Fecha:</span>
+              <span>{new Date().toLocaleDateString('es-ES')}</span>
+            </div>
+
+            <div className="border-t pt-3 mt-3">
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total pagado:</span>
+                <span className="text-green-600">${precioFinal.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h3 className="font-semibold text-blue-800 mb-2">Detalles de la Transacción</h3>
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Curso:</span>
-                <span className="font-semibold">{nombreCurso}</span>
+                <span className="text-blue-700">N° de Transacción:</span>
+                <span className="font-mono">#{pago.id_pago || inscripcion.id_inscripcion || 'N/A'}</span>
               </div>
-              
               <div className="flex justify-between">
-                <span className="text-gray-600">Método de pago:</span>
-                <span className="font-medium capitalize">
-                  {metodosPago.find(m => m.id === metodoPago)?.icono} {metodoPago?.toLowerCase()}
-                </span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-gray-600">Fecha:</span>
-                <span>{new Date().toLocaleDateString('es-ES')}</span>
-              </div>
-              
-              <div className="border-t pt-3 mt-3">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total pagado:</span>
-                  <span className="text-green-600">${(precioFinal || 0).toFixed(2)}</span>
-                </div>
+                <span className="text-blue-700">Estado:</span>
+                <span className="text-green-600 font-semibold">PAGADO ✓</span>
               </div>
             </div>
+          </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-blue-800 mb-2">Detalles de la Transacción</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-blue-700">N° de Transacción:</span>
-                  <span className="font-mono">#{factura.pago?.id_pago || factura.inscripcion?.id_inscripcion || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-blue-700">Estado:</span>
-                  <span className="text-green-600 font-semibold">PAGADO ✓</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  onClose();
-                  onNavigate('my-courses');
-                }}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
-              >
-                Ver Mis Cursos
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
-              >
-                Seguir Explorando
-              </button>
-            </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                onClose();
+                onNavigate('my-courses');
+              }}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
+            >
+              Ver Mis Cursos
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
+            >
+              Seguir Explorando
+            </button>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -281,7 +289,7 @@ export default function CourseCatalogScreen({ onNavigate }) {
               ) : errorPuntos ? (
                 <span className="text-red-600 text-sm">{errorPuntos}</span>
               ) : (
-                <span className="font-semibold text-gray-900">{puntos || 0} puntos</span>
+                <span className="font-semibold text-gray-900">{puntos.saldo || 0} puntos</span>
               )}
             </button>
 

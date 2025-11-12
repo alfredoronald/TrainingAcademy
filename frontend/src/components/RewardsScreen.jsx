@@ -22,7 +22,7 @@ export default function RewardsScreen({ onNavigate }) {
       return;
     }
 
-    if (puntos < recompensa.puntos_requeridos) {
+    if (puntos.saldo < recompensa.puntos_requeridos) {
       alert(`No tienes suficientes puntos. Necesitas ${recompensa.puntos_requeridos} puntos.`);
       return;
     }
@@ -87,7 +87,7 @@ export default function RewardsScreen({ onNavigate }) {
                     <div>
                       <div className="text-sm">Tus Puntos</div>
                       <div className="text-2xl font-bold">
-                        {loadingPuntos ? <RefreshCw className="w-5 h-5 animate-spin" /> : puntos || 0}
+                        {loadingPuntos ? <RefreshCw className="w-5 h-5 animate-spin" /> : puntos.saldo || 0}
                       </div>
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export default function RewardsScreen({ onNavigate }) {
               <div className="grid md:grid-cols-2 gap-6">
                 {recompensasFiltradas.map((recompensa) => {
                   const yaCanjeada = canjes.some(canje => canje.id_recompensa === recompensa.id_recompensa);
-                  const puedeCanjear = puntos >= recompensa.puntos_requeridos && !yaCanjeada;
+                  const puedeCanjear = puntos.saldo >= recompensa.puntos_requeridos && !yaCanjeada;
 
                   return (
                     <div
@@ -246,7 +246,7 @@ export default function RewardsScreen({ onNavigate }) {
                         ) : !puedeCanjear ? (
                           <div className="flex items-center gap-2 text-red-500 text-sm">
                             <XCircle className="w-4 h-4" />
-                            <span>Necesitas {recompensa.puntos_requeridos - puntos} puntos más</span>
+                            <span>Necesitas {recompensa.puntos_requeridos - puntos.saldo} puntos más</span>
                           </div>
                         ) : (
                           <button

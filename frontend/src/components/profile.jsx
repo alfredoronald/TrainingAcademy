@@ -84,7 +84,7 @@ export default function Profile({ onNavigate }) {
                   <span className="text-red-600">{errorPuntos}</span>
                 ) : (
                   <span className="font-semibold text-gray-900">
-                    {puntos} puntos
+                    {puntos.saldo ?? 0} puntos
                   </span>
                 )}
               </div>
@@ -177,7 +177,7 @@ export default function Profile({ onNavigate }) {
                 <div className="bg-green-50 rounded-xl p-6">
                   <p className="text-sm text-gray-600 mb-2">Puntos totales</p>
                   <p className="text-4xl font-bold text-green-600">
-                    {puntos || 0}
+                    {puntos?.totalObtenidos ?? 0} 
                   </p>
                 </div>
               </div>

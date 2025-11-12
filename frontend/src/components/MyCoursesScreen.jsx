@@ -304,7 +304,7 @@ export default function MyCoursesScreen({ onNavigate }) {
               ) : errorPuntos ? (
                 <span className="text-red-600 text-sm">{errorPuntos}</span>
               ) : (
-                <span className="font-semibold text-gray-900">{puntos || 0} puntos</span>
+                <span className="font-semibold text-gray-900">{puntos?.saldo ?? 0} puntos</span>
               )}
             </div>
 

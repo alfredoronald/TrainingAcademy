@@ -17,7 +17,11 @@ export function usePuntajeUsuario(idUsuario) {
         );
 
         if (usuarioPuntaje) {
-          setPuntos(usuarioPuntaje.total_puntos_obtenidos);
+          setPuntos({
+            totalObtenidos: usuarioPuntaje.total_puntos_obtenidos,
+            totalUsados: usuarioPuntaje.total_puntos_usados,
+            saldo: usuarioPuntaje.total_saldo_puntos,
+          });
         } else {
           setErrorPuntos("No se encontró el puntaje del usuario");
         }
