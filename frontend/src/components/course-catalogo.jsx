@@ -1,28 +1,60 @@
 import React, { useState, useEffect } from "react";
-import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal, Gift } from "lucide-react";
+import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal, Gift, Tag, RefreshCw } from "lucide-react";
 import { useCursos } from "../hooks/useCursos";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
 import { useInscripciones } from "../hooks/useInscripciones";
 import { useAuthContext } from "../context/AuthContext";
+import { useCanjes } from "../hooks/useCanjes";
 
 export default function CourseCatalogScreen({ onNavigate }) {
   const { user } = useAuthContext();
   const idUsuario = user?.id_usuario;
-  const { courses, errorCursos, loadingCursos } = useCursos();
-  const { puntos, errorPuntos, loadingPuntos } = usePuntajeUsuario(idUsuario);
-  
+  const { courses, errorCursos, loadingCursos, refetch: refetchCursos } = useCursos();
+  const { puntos, errorPuntos, loadingPuntos, refetch: refetchPuntos } = usePuntajeUsuario(idUsuario);
   const { 
     inscripciones, 
     inscribirEnCurso, 
     inscribiendo,
-    estaInscrito 
+    estaInscrito,
+    cargarInscripcionesConProgreso 
   } = useInscripciones(idUsuario);
+  
+  const { canjes, canjesDisponibles, errorCanjes, loadingCanjes, recargarCanjes } = useCanjes(idUsuario);
   
   const [mostrarFactura, setMostrarFactura] = useState(null);
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState('TARJETA');
   const [mostrarSeleccionPago, setMostrarSeleccionPago] = useState(false);
   const [cursoSeleccionado, setCursoSeleccionado] = useState(null);
   const [cursosRenderizados, setCursosRenderizados] = useState([]);
+  const [canjeSeleccionado, setCanjeSeleccionado] = useState(null);
+  const [mostrarSeleccionCanje, setMostrarSeleccionCanje] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // 🆕 DEBUG DETALLADO: Verificar estado de inscripciones
+  useEffect(() => {
+    console.log('🔍 DEBUG DETALLADO - Estado completo:', {
+      cursos: cursosRenderizados.length,
+      inscripciones: inscripciones.length,
+      usuario: idUsuario,
+      forceUpdate: forceUpdate
+    });
+    
+    if (cursosRenderizados.length > 0) {
+      console.log('📋 Lista de cursos:');
+      cursosRenderizados.forEach(curso => {
+        const inscrito = estaInscrito(curso.id_curso);
+        console.log(`  Curso ${curso.id_curso} (${curso.nombre_curso}): ${inscrito ? '✅ INSCRITO' : '❌ NO INSCRITO'}`);
+      });
+    }
+    
+    if (inscripciones.length > 0) {
+      console.log('📋 Lista de inscripciones:');
+      inscripciones.forEach(insc => {
+        console.log(`  Inscripción: curso ${insc.id_curso}, usuario ${insc.id_usuario}, estado: ${insc.estado}`);
+      });
+    }
+  }, [cursosRenderizados, inscripciones, idUsuario, forceUpdate]);
 
   // Efecto para sincronizar cursos con validación
   useEffect(() => {
@@ -30,9 +62,58 @@ export default function CourseCatalogScreen({ onNavigate }) {
       const cursosValidos = courses.filter(curso => 
         curso && curso.id_curso && typeof curso.id_curso === 'number'
       );
+      console.log(`📚 Cursos cargados: ${cursosValidos.length} de ${courses.length}`);
       setCursosRenderizados(cursosValidos);
     }
-  }, [courses]);
+  }, [courses, forceUpdate]);
+
+  // 🆕 DEBUG: Mostrar información de canjes e inscripciones
+  useEffect(() => {
+    console.log('🔍 Estado actual:', {
+      totalCanjes: canjes.length,
+      disponibles: canjesDisponibles.length,
+      inscripciones: inscripciones.length,
+      cursos: cursosRenderizados.length,
+      usuario: idUsuario
+    });
+    
+    // Verificar estado de inscripciones para cada curso
+    if (cursosRenderizados.length > 0) {
+      cursosRenderizados.forEach(curso => {
+        const inscrito = estaInscrito(curso.id_curso);
+        console.log(`📊 Curso ${curso.id_curso} (${curso.nombre_curso}): ${inscrito ? 'INSCRITO' : 'NO INSCRITO'}`);
+      });
+    }
+  }, [canjes, canjesDisponibles, inscripciones, cursosRenderizados, idUsuario, forceUpdate]);
+
+  // 🆕 FUNCIÓN MEJORADA PARA REFRESCAR TODOS LOS DATOS
+  const refrescarDatos = async () => {
+    setRefreshing(true);
+    try {
+      console.log('🔄 Refrescando datos...');
+      
+      // 🆕 EJECUTAR EN SECUENCIA PARA MEJOR CONTROL
+      await cargarInscripcionesConProgreso();
+      console.log('✅ Inscripciones recargadas:', inscripciones.length);
+      
+      await refetchCursos?.();
+      console.log('✅ Cursos recargados');
+      
+      await refetchPuntos?.();
+      console.log('✅ Puntos recargados');
+      
+      await recargarCanjes?.();
+      console.log('✅ Canjes recargados');
+      
+      // 🆕 FORZAR RE-RENDERIZADO
+      setForceUpdate(prev => prev + 1);
+      
+    } catch (error) {
+      console.error('❌ Error refrescando datos:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // MÉTODOS DE PAGO DISPONIBLES
   const metodosPago = [
@@ -41,43 +122,122 @@ export default function CourseCatalogScreen({ onNavigate }) {
     { id: 'BILLETERA', nombre: 'Billetera', icono: '📱' }
   ];
 
-  // FUNCIÓN PARA MOSTRAR SELECCIÓN DE PAGO
- // Dentro de handleSeleccionarPago
-const handleSeleccionarPago = (curso) => {
-  if (!idUsuario) {
-    alert('Debes iniciar sesión para inscribirte');
-    return;
-  }
+  // 🆕 FUNCIÓN MEJORADA PARA MOSTRAR SELECCIÓN DE PAGO
+  const handleSeleccionarPago = (curso) => {
+    if (!idUsuario) {
+      alert('Debes iniciar sesión para inscribirte');
+      return;
+    }
 
-  if (estaInscrito(curso.id_curso)) {
-    alert('Ya estás inscrito en este curso');
-    return;
-  }
+    // 🆕 VERIFICACIÓN MÁS ROBUSTA DEL ESTADO DE INSCRIPCIÓN
+    const estaInscritoEnCurso = estaInscrito(curso.id_curso);
+    console.log(`🔍 Verificación inscripción - Curso ${curso.id_curso}:`, estaInscritoEnCurso);
 
-  if (curso.estado_disponibilidad !== 'ACTIVO') {
-    alert('Este curso no está disponible actualmente');
-    return;
-  }
+    if (estaInscritoEnCurso) {
+      alert('Ya estás inscrito en este curso');
+      return;
+    }
 
-  setCursoSeleccionado(curso);
-  setMetodoPagoSeleccionado('TARJETA'); // Reiniciar selección al abrir un nuevo curso
-  setMostrarSeleccionPago(true);
-};
+    if (curso.estado_disponibilidad !== 'ACTIVO') {
+      alert('Este curso no está disponible actualmente');
+      return;
+    }
 
+    setCursoSeleccionado(curso);
+    
+    // 🆕 DEBUG: Verificar canjes disponibles
+    console.log('🎯 Canjes disponibles para usuario:', canjesDisponibles.length);
+    console.log('📋 Lista de canjes disponibles:', canjesDisponibles);
+    
+    // Si tiene canjes disponibles, mostrar selección de canje primero
+    if (canjesDisponibles.length > 0) {
+      console.log('🔄 Mostrando selección de canje...');
+      setMostrarSeleccionCanje(true);
+    } else {
+      console.log('❌ No hay canjes disponibles, mostrando pago directo');
+      setMostrarSeleccionPago(true);
+    }
+  };
 
-  // FUNCIÓN PARA CONFIRMAR INSCRIPCIÓN (MEJORADA)
+  // FUNCIÓN PARA APLICAR CANJE
+  const handleAplicarCanje = (canje) => {
+    console.log('✅ Canje seleccionado:', canje);
+    setCanjeSeleccionado(canje);
+    setMostrarSeleccionCanje(false);
+    setMostrarSeleccionPago(true);
+  };
+
+  // FUNCIÓN PARA CALCULAR PRECIO CON DESCUENTO
+  const calcularPrecioConDescuento = (precioOriginal, canje) => {
+    if (!canje) return precioOriginal;
+    
+    const descuento = (precioOriginal * canje.criterio) / 100;
+    return Math.max(0, precioOriginal - descuento);
+  };
+
+  // 🆕 FUNCIÓN COMPLETAMENTE CORREGIDA PARA CONFIRMAR INSCRIPCIÓN
   const handleConfirmarInscripcion = async () => {
     if (!cursoSeleccionado) return;
 
-    const resultado = await inscribirEnCurso(cursoSeleccionado.id_curso, metodoPagoSeleccionado);
+    console.log('🎯 Confirmando inscripción con:', {
+      curso: cursoSeleccionado.nombre_curso,
+      cursoId: cursoSeleccionado.id_curso,
+      canje: canjeSeleccionado?.nombre_recompensa,
+      metodoPago: metodoPagoSeleccionado,
+      idCanje: canjeSeleccionado?.id_canje
+    });
+
+    // 🆕 VERIFICACIÓN FINAL ANTES DE INSCRIBIR
+    const inscripcionPrevia = estaInscrito(cursoSeleccionado.id_curso);
+    if (inscripcionPrevia) {
+      alert('Ya estás inscrito en este curso. Recargando datos...');
+      await refrescarDatos();
+      setMostrarSeleccionPago(false);
+      setCursoSeleccionado(null);
+      setCanjeSeleccionado(null);
+      return;
+    }
+
+    const resultado = await inscribirEnCurso(
+      cursoSeleccionado.id_curso, 
+      metodoPagoSeleccionado,
+      canjeSeleccionado?.id_canje
+    );
+    
+    console.log('📊 Resultado de inscripción:', resultado);
     
     if (resultado.success) {
-      // Asegurar que la factura tenga valores numéricos válidos
+      const precioOriginal = Number(cursoSeleccionado.costo) || 0;
+      const precioFinal = canjeSeleccionado 
+        ? calcularPrecioConDescuento(precioOriginal, canjeSeleccionado)
+        : precioOriginal;
+
+      // 🆕 ACTUALIZACIÓN INMEDIATA Y FORZADA DEL ESTADO - CORREGIDO
+      console.log('🔄 Actualizando estado después de inscripción exitosa...');
+      
+      // 🆕 ESPERAR UN MOMENTO PARA QUE EL BACKEND PROCESE
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 🆕 FORZAR RECARGA COMPLETA DE DATOS
+      await refrescarDatos();
+      
+      // 🆕 VERIFICACIÓN EXTRA DEL ESTADO
+      const nuevaVerificacion = estaInscrito(cursoSeleccionado.id_curso);
+      console.log(`✅ Verificación final - Curso ${cursoSeleccionado.id_curso}:`, nuevaVerificacion);
+      
+      if (!nuevaVerificacion) {
+        console.warn('⚠️ La inscripción aún no se refleja, forzando recarga manual...');
+        // Último recurso: forzar recarga de inscripciones específicamente
+        await cargarInscripcionesConProgreso();
+        setForceUpdate(prev => prev + 1);
+      }
+
+      // Preparar factura
       const facturaConValoresSeguros = {
         ...resultado.data,
         inscripcion: {
-          precio_final: Number(resultado.data.inscripcion?.precio_final) || Number(cursoSeleccionado.costo) || 0,
-          precio: Number(resultado.data.inscripcion?.precio) || Number(cursoSeleccionado.costo) || 0,
+          precio_final: precioFinal,
+          precio: precioOriginal,
           id_inscripcion: resultado.data.inscripcion?.id_inscripcion || Date.now(),
           ...resultado.data.inscripcion
         },
@@ -86,29 +246,81 @@ const handleSeleccionarPago = (curso) => {
           metodo_pago: resultado.data.pago?.metodo_pago || metodoPagoSeleccionado,
           ...resultado.data.pago
         },
-        curso: cursoSeleccionado
+        curso: cursoSeleccionado,
+        canjeAplicado: canjeSeleccionado
       };
       
       setMostrarFactura(facturaConValoresSeguros);
       setMostrarSeleccionPago(false);
       setCursoSeleccionado(null);
+      setCanjeSeleccionado(null);
+      
+      console.log('🎉 Inscripción completada exitosamente');
+      
     } else {
       alert(`Error: ${resultado.error}`);
       setMostrarSeleccionPago(false);
       setCursoSeleccionado(null);
+      setCanjeSeleccionado(null);
     }
   };
 
-  // COMPONENTE MODAL DE SELECCIÓN DE PAGO (fuera del render principal)
-  const SeleccionPagoModal = ({ curso, onClose, onConfirm }) => {
+  // 🆕 COMPONENTE DE DEBUG MEJORADO
+  const DebugInfo = () => {
+    const cursoInscrito = cursoSeleccionado ? estaInscrito(cursoSeleccionado.id_curso) : false;
+    
+    return (
+      <div className="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-400 p-3 rounded-lg text-xs max-w-xs z-50">
+        <strong>🔧 Debug Info:</strong>
+        <div>Canjes: {canjes.length} (Disp: {canjesDisponibles.length})</div>
+        <div>Inscripciones: {inscripciones.length}</div>
+        <div>Cursos: {cursosRenderizados.length}</div>
+        <div>Usuario: {idUsuario}</div>
+        <div>ForceUpdate: {forceUpdate}</div>
+        {cursoSeleccionado && (
+          <div className="mt-1 p-1 bg-blue-100 rounded">
+            <div>Curso: {cursoSeleccionado.nombre_curso}</div>
+            <div>ID: {cursoSeleccionado.id_curso}</div>
+            <div className={cursoInscrito ? 'text-green-600 font-bold' : 'text-red-600'}>
+              Estado: {cursoInscrito ? 'INSCRITO' : 'NO INSCRITO'}
+            </div>
+          </div>
+        )}
+        <div className="flex gap-1 mt-2">
+          <button 
+            onClick={refrescarDatos}
+            disabled={refreshing}
+            className="flex-1 bg-blue-500 text-white px-2 py-1 rounded text-xs disabled:opacity-50"
+          >
+            {refreshing ? '🔄' : 'Actualizar'}
+          </button>
+          <button 
+            onClick={() => {
+              console.log('🔍 Inscripciones detalladas:', inscripciones);
+              console.log('🔍 Cursos:', cursosRenderizados);
+              if (cursoSeleccionado) {
+                console.log(`🔍 Curso ${cursoSeleccionado.id_curso} inscrito:`, estaInscrito(cursoSeleccionado.id_curso));
+              }
+            }}
+            className="flex-1 bg-gray-500 text-white px-2 py-1 rounded text-xs"
+          >
+            Log
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // COMPONENTE MODAL DE SELECCIÓN DE CANJE
+  const SeleccionCanjeModal = ({ curso, onClose, onSeleccionarCanje, onContinuarSinCanje }) => {
     if (!curso) return null;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-md">
+        <div className="bg-white rounded-lg w-full max-w-2xl">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Selecciona Método de Pago</h2>
+              <h2 className="text-xl font-bold text-gray-900">¿Quieres usar un descuento?</h2>
               <button 
                 onClick={onClose}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -119,10 +331,121 @@ const handleSeleccionarPago = (curso) => {
 
             <div className="mb-6">
               <h3 className="font-semibold text-gray-900 mb-2">Curso: {curso.nombre_curso}</h3>
-              <p className="text-lg font-bold text-blue-600">Total: ${curso.costo || 0}</p>
+              <p className="text-lg font-bold text-blue-600">Precio original: ${curso.costo || 0}</p>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3">Tus descuentos disponibles:</h4>
+              
+              {canjesDisponibles.length > 0 ? (
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {canjesDisponibles.map((canje) => (
+                    <div
+                      key={canje.id_canje}
+                      onClick={() => onSeleccionarCanje(canje)}
+                      className="p-4 border-2 border-green-200 bg-green-50 rounded-lg cursor-pointer hover:border-green-300 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Tag className="w-5 h-5 text-green-600" />
+                          <div>
+                            <div className="font-semibold text-gray-900">{canje.nombre_recompensa}</div>
+                            <div className="text-sm text-green-600">
+                              {canje.criterio}% de descuento
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ID: {canje.id_canje}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            -{canje.criterio}%
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Nuevo precio: ${calcularPrecioConDescuento(curso.costo, canje)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  No tienes descuentos disponibles
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onContinuarSinCanje}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
+              >
+                Continuar sin descuento
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // COMPONENTE MODAL DE SELECCIÓN DE PAGO (ACTUALIZADO CON CANJE)
+  const SeleccionPagoModal = ({ curso, canje, onClose, onConfirm }) => {
+    if (!curso) return null;
+
+    const precioOriginal = Number(curso.costo) || 0;
+    const precioFinal = canje ? calcularPrecioConDescuento(precioOriginal, canje) : precioOriginal;
+    const descuentoAplicado = precioOriginal - precioFinal;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-md">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Confirmar Pago</h2>
+              <button 
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-900 mb-2">Curso: {curso.nombre_curso}</h3>
+              
+              {canje && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <Tag className="w-4 h-4" />
+                    <span className="font-semibold">Descuento aplicado: {canje.criterio}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span>Precio original:</span>
+                    <span className="line-through text-gray-500">${precioOriginal}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Descuento:</span>
+                    <span className="text-green-600">-${descuentoAplicado.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <p className={`text-lg font-bold ${canje ? 'text-green-600' : 'text-blue-600'}`}>
+                Total a pagar: ${precioFinal.toFixed(2)}
+              </p>
             </div>
 
             <div className="space-y-3 mb-6">
+              <h4 className="font-semibold text-gray-900 mb-2">Método de pago:</h4>
               {metodosPago.map((metodo) => (
                 <div
                   key={metodo.id}
@@ -172,97 +495,116 @@ const handleSeleccionarPago = (curso) => {
     );
   };
 
-  // COMPONENTE MODAL DE FACTURA CORREGIDO
- // Dentro de FacturaModal
-const FacturaModal = ({ factura, onClose }) => {
-  if (!factura) return null;
+  // COMPONENTE MODAL DE FACTURA ACTUALIZADO
+  const FacturaModal = ({ factura, onClose }) => {
+    if (!factura) return null;
 
-  const curso = factura.curso || {};
-  const pago = factura.pago || {};
-  const inscripcion = factura.inscripcion || {};
+    const curso = factura.curso || {};
+    const pago = factura.pago || {};
+    const inscripcion = factura.inscripcion || {};
+    const canje = factura.canjeAplicado;
 
-  const precio = Number(inscripcion.precio) || Number(curso.costo) || 0;
-  const precioFinal = Number(inscripcion.precio_final) || precio;
-  const nombreCurso = curso.nombre_curso || 'Curso';
-  const metodoPago = pago.metodo_pago || metodoPagoSeleccionado;
+    const precio = Number(inscripcion.precio) || Number(curso.costo) || 0;
+    const precioFinal = Number(inscripcion.precio_final) || precio;
+    const nombreCurso = curso.nombre_curso || 'Curso';
+    const metodoPago = pago.metodo_pago || metodoPagoSeleccionado;
+    const descuentoAplicado = precio - precioFinal;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md">
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <div className="text-4xl mb-2">🎉</div>
-            <h2 className="text-xl font-bold text-gray-900">¡Pago Exitoso!</h2>
-            <p className="text-green-600 mt-1">Tu inscripción ha sido confirmada</p>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Curso:</span>
-              <span className="font-semibold">{nombreCurso}</span>
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-md">
+          <div className="p-6">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-2">🎉</div>
+              <h2 className="text-xl font-bold text-gray-900">¡Pago Exitoso!</h2>
+              <p className="text-green-600 mt-1">Tu inscripción ha sido confirmada</p>
             </div>
 
-            <div className="flex justify-between">
-              <span className="text-gray-600">Método de pago:</span>
-              <span className="font-medium capitalize">
-                {metodosPago.find(m => m.id === metodoPago)?.icono} {metodoPago?.toLowerCase()}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-600">Fecha:</span>
-              <span>{new Date().toLocaleDateString('es-ES')}</span>
-            </div>
-
-            <div className="border-t pt-3 mt-3">
-              <div className="flex justify-between font-bold text-lg">
-                <span>Total pagado:</span>
-                <span className="text-green-600">${precioFinal.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h3 className="font-semibold text-blue-800 mb-2">Detalles de la Transacción</h3>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 mb-6">
               <div className="flex justify-between">
-                <span className="text-blue-700">N° de Transacción:</span>
-                <span className="font-mono">#{pago.id_pago || inscripcion.id_inscripcion || 'N/A'}</span>
+                <span className="text-gray-600">Curso:</span>
+                <span className="font-semibold">{nombreCurso}</span>
               </div>
+
+              {canje && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Descuento aplicado:</span>
+                    <span className="font-semibold text-green-600">{canje.criterio}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ahorro:</span>
+                    <span className="text-green-600">-${descuentoAplicado.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-between">
-                <span className="text-blue-700">Estado:</span>
-                <span className="text-green-600 font-semibold">PAGADO ✓</span>
+                <span className="text-gray-600">Método de pago:</span>
+                <span className="font-medium capitalize">
+                  {metodosPago.find(m => m.id === metodoPago)?.icono} {metodoPago?.toLowerCase()}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Fecha:</span>
+                <span>{new Date().toLocaleDateString('es-ES')}</span>
+              </div>
+
+              <div className="border-t pt-3 mt-3">
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total pagado:</span>
+                  <span className="text-green-600">${precioFinal.toFixed(2)}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                onClose();
-                onNavigate('my-courses');
-              }}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
-            >
-              Ver Mis Cursos
-            </button>
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
-            >
-              Seguir Explorando
-            </button>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Detalles de la Transacción</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700">N° de Transacción:</span>
+                  <span className="font-mono">#{pago.id_pago || inscripcion.id_inscripcion || 'N/A'}</span>
+                </div>
+                {canje && (
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Cupón usado:</span>
+                    <span className="font-mono">{canje.nombre_recompensa}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Estado:</span>
+                  <span className="text-green-600 font-semibold">PAGADO ✓</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  onClose();
+                  onNavigate('my-courses');
+                }}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
+              >
+                Ver Mis Cursos
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
+              >
+                Seguir Explorando
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
+      {/* HEADER ACTUALIZADO CON LOS BOTONES DEL PRIMER COURSE CATALOG */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -278,7 +620,7 @@ const FacturaModal = ({ factura, onClose }) => {
           </div>
 
           <div className="flex items-center gap-6">
-            {/* INSIGNIA DE PUNTOS - AHORA REDIRIGE A RECOMPENSAS */}
+            {/* INSIGNIA DE PUNTOS - REDIRIGE A RECOMPENSAS */}
             <button 
               onClick={() => onNavigate("rewards")}
               className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
@@ -377,9 +719,15 @@ const FacturaModal = ({ factura, onClose }) => {
                 const inscrito = estaInscrito(course.id_curso);
                 const disponible = course.estado_disponibilidad === 'ACTIVO';
                 
+                console.log(`🎯 Renderizando curso ${course.id_curso}:`, { 
+                  nombre: course.nombre_curso, 
+                  inscrito, 
+                  disponible 
+                });
+
                 return (
                   <div
-                    key={`curso-${course.id_curso}`}
+                    key={`curso-${course.id_curso}-${forceUpdate}`}
                     className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow"
                   >
                     <div className="flex justify-between items-start mb-4">
@@ -464,13 +812,33 @@ const FacturaModal = ({ factura, onClose }) => {
         )}
       </main>
 
-      {/* MODALES - SOLO LOS DE PAGO Y FACTURA */}
+      {/* DEBUG INFO */}
+      <DebugInfo />
+
+      {/* MODALES */}
+      {mostrarSeleccionCanje && (
+        <SeleccionCanjeModal 
+          curso={cursoSeleccionado}
+          onClose={() => {
+            setMostrarSeleccionCanje(false);
+            setCursoSeleccionado(null);
+          }}
+          onSeleccionarCanje={handleAplicarCanje}
+          onContinuarSinCanje={() => {
+            setMostrarSeleccionCanje(false);
+            setMostrarSeleccionPago(true);
+          }}
+        />
+      )}
+
       {mostrarSeleccionPago && (
         <SeleccionPagoModal 
           curso={cursoSeleccionado}
+          canje={canjeSeleccionado}
           onClose={() => {
             setMostrarSeleccionPago(false);
             setCursoSeleccionado(null);
+            setCanjeSeleccionado(null);
           }}
           onConfirm={handleConfirmarInscripcion}
         />

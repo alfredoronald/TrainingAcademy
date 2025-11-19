@@ -1,10 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Canje } from './canje.entity';
 import { CreateCanjeDto } from './canje.dto';
 import { Recompensa } from '../recompensa/recompensa.entity';
-import { Usuario } from '../usuario/usuario.entity';
 import { Puntos } from '../puntaje/puntaje.entity';
 
 @Injectable()
@@ -16,14 +15,11 @@ export class CanjeService {
     @InjectRepository(Recompensa)
     private readonly recompensaRepository: Repository<Recompensa>,
     
-    @InjectRepository(Usuario)
-    private readonly usuarioRepository: Repository<Usuario>,
-    
     @InjectRepository(Puntos)
     private readonly puntosRepository: Repository<Puntos>,
   ) {}
 
-  async create(createCanjeDto: CreateCanjeDto): Promise<Canje> {
+  async create(createCanjeDto: CreateCanjeDto): Promise<any> {
     console.log('🔄 Creando nuevo canje:', createCanjeDto);
     
     try {
@@ -48,7 +44,7 @@ export class CanjeService {
         throw new NotFoundException('Recompensa no encontrada');
       }
 
-      // 3. OBTENER LOS PUNTOS DEL USUARIO (solo para verificación y mensaje de error)
+      // 3. Verificar puntos del usuario
       const puntosUsuario = await this.puntosRepository.findOne({
         where: { usuario: { id_usuario: createCanjeDto.id_usuario } }
       });
@@ -57,34 +53,40 @@ export class CanjeService {
         throw new ConflictException('Usuario no tiene puntos registrados');
       }
 
-      console.log(`🔍 Verificando puntos: Usuario ${puntosUsuario.total_saldo_puntos} vs Recompensa ${recompensa.puntos_requeridos}`);
-      
-      // 4. VERIFICAR PUNTOS SUFICIENTES (solo para mensaje de error amigable)
       if (puntosUsuario.total_saldo_puntos < recompensa.puntos_requeridos) {
         throw new ConflictException(
-          `Puntaje insuficiente. Tienes ${puntosUsuario.total_saldo_puntos} puntos pero necesitas ${recompensa.puntos_requeridos} puntos para esta recompensa`
+          `Puntaje insuficiente. Tienes ${puntosUsuario.total_saldo_puntos} puntos pero necesitas ${recompensa.puntos_requeridos} puntos`
         );
       }
 
-      // 5. OBTENER EL PRÓXIMO ID_CANJE - CORREGIDO
-      const ultimoCanje = await this.canjeRepository.findOne({
-        where: {}, // ← CONDICIÓN REQUERIDA
-        order: { id_canje: 'DESC' }
-      });
-      
-      const proximoId = ultimoCanje ? ultimoCanje.id_canje + 1 : 1;
-      console.log(`🔍 Próximo ID de canje: ${proximoId}`);
-
-      // 6. SOLO crear el canje - LOS PUNTOS SE RESTAN AUTOMÁTICAMENTE POR EL TRIGGER
+      // 4. Crear canje
       const canje = this.canjeRepository.create({
-        id_canje: proximoId,
         id_usuario: createCanjeDto.id_usuario,
-        id_recompensa: createCanjeDto.id_recompensa
+        id_recompensa: createCanjeDto.id_recompensa,
+        utilizado: false,
+        estado: 'ACTIVO'
       });
 
       const savedCanje = await this.canjeRepository.save(canje);
-      console.log('✅ Canje creado exitosamente. Los puntos se restarán automáticamente por el trigger.');
-      return savedCanje;
+      console.log('✅ Canje creado exitosamente:', savedCanje);
+
+      // 5. Obtener canje completo con relaciones para retornar
+      const canjeCompleto = await this.canjeRepository.findOne({
+        where: { id_canje: savedCanje.id_canje },
+        relations: ['recompensa']
+      });
+
+      // 🆕 VERIFICAR SI canjeCompleto ES NULL
+      if (!canjeCompleto) {
+        throw new NotFoundException('No se pudo recuperar el canje recién creado');
+      }
+
+      // 6. Formatear respuesta para el frontend
+      return {
+        ...canjeCompleto,
+        nombre_recompensa: canjeCompleto.recompensa?.nombre,
+        criterio: canjeCompleto.recompensa?.criterio
+      };
 
     } catch (error) {
       console.error('❌ Error creando canje:', error);
@@ -92,7 +94,7 @@ export class CanjeService {
     }
   }
 
-  async findByUsuario(idUsuario: number): Promise<Canje[]> {
+  async findByUsuario(idUsuario: number): Promise<any[]> {
     console.log(`🔍 Buscando canjes para usuario ${idUsuario}...`);
     try {
       const canjes = await this.canjeRepository.find({
@@ -100,41 +102,70 @@ export class CanjeService {
         relations: ['recompensa'],
         order: { fecha_canje: 'DESC' }
       });
-      console.log(`✅ Encontrados ${canjes.length} canjes para usuario ${idUsuario}`);
-      return canjes;
+
+      // Formatear respuesta
+      const canjesFormateados = canjes.map(canje => ({
+        ...canje,
+        nombre_recompensa: canje.recompensa?.nombre,
+        criterio: canje.recompensa?.criterio
+      }));
+
+      console.log(`✅ Encontrados ${canjesFormateados.length} canjes para usuario ${idUsuario}`);
+      return canjesFormateados;
     } catch (error) {
       console.error('❌ Error buscando canjes:', error);
       throw error;
     }
   }
 
-  async findAll(): Promise<Canje[]> {
+  async findAll(): Promise<any[]> {
     console.log('🔍 Buscando todos los canjes...');
     try {
       const canjes = await this.canjeRepository.find({
         relations: ['recompensa'],
         order: { fecha_canje: 'DESC' }
       });
-      console.log(`✅ Encontrados ${canjes.length} canjes en total`);
-      return canjes;
+
+      const canjesFormateados = canjes.map(canje => ({
+        ...canje,
+        nombre_recompensa: canje.recompensa?.nombre,
+        criterio: canje.recompensa?.criterio
+      }));
+
+      console.log(`✅ Encontrados ${canjesFormateados.length} canjes en total`);
+      return canjesFormateados;
     } catch (error) {
       console.error('❌ Error obteniendo canjes:', error);
       throw error;
     }
   }
 
-  async findOne(id: number): Promise<Canje | null> {
-    return await this.canjeRepository.findOne({
+  async findOne(id: number): Promise<any | null> {
+    const canje = await this.canjeRepository.findOne({
       where: { id_canje: id },
       relations: ['recompensa']
     });
+
+    if (canje) {
+      return {
+        ...canje,
+        nombre_recompensa: canje.recompensa?.nombre,
+        criterio: canje.recompensa?.criterio
+      };
+    }
+
+    return null;
   }
 
   async remove(id: number): Promise<void> {
-    const canje = await this.findOne(id);
+    const canje = await this.canjeRepository.findOne({
+      where: { id_canje: id }
+    });
+
     if (!canje) {
       throw new NotFoundException(`Canje con ID ${id} no encontrado`);
     }
+
     await this.canjeRepository.remove(canje);
     console.log(`✅ Canje ${id} eliminado`);
   }

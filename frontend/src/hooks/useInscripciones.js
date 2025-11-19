@@ -236,7 +236,11 @@ export const useInscripciones = (idUsuario) => {
   // 🆕 CORREGIDO: useEffect con dependencias correctas
   useEffect(() => {
     if (idUsuario) {
+      console.log('🚀 useEffect ejecutándose - Cargando inscripciones para usuario:', idUsuario);
       cargarInscripcionesConProgreso();
+    } else {
+      console.log('🚀 useEffect - No hay usuario, limpiando inscripciones');
+      setInscripciones([]);
     }
   }, [idUsuario, cargarInscripcionesConProgreso]);
 
@@ -321,7 +325,154 @@ export const useInscripciones = (idUsuario) => {
     }
   }, [idUsuario]);
 
-  // Resto de funciones permanecen igual...
+  // 🆕 ACTUALIZADO: Función inscribirEnCurso para manejar canjes
+  const inscribirEnCurso = useCallback(async (idCurso, metodoPago = 'TARJETA', idCanje = null) => {
+    if (!idUsuario || !idCurso) {
+      return { 
+        success: false, 
+        error: 'Datos incompletos para la inscripción' 
+      };
+    }
+
+    const metodosValidos = ['TARJETA', 'TRANSFERENCIA', 'BILLETERA'];
+    if (!metodosValidos.includes(metodoPago)) {
+      return {
+        success: false,
+        error: 'Método de pago no válido'
+      };
+    }
+
+    setInscribiendo(true);
+    setError(null);
+    
+    try {
+      console.log('🎯 Iniciando inscripción - Curso:', idCurso, 'Usuario:', idUsuario, 'Método:', metodoPago, 'Canje:', idCanje);
+      
+      const bodyData = {
+        id_curso: Number(idCurso),
+        id_usuario: Number(idUsuario),
+        metodo_pago: metodoPago
+      };
+
+      // 🆕 Añadir canje si está disponible
+      if (idCanje) {
+        bodyData.id_canje = idCanje;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/inscripciones`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bodyData)
+      });
+
+      console.log('📨 Respuesta del servidor - Status:', res.status);
+      
+      let data;
+      try {
+        data = await res.json();
+        console.log('📊 Datos de respuesta:', data);
+      } catch (parseError) {
+        console.error('❌ Error parseando respuesta JSON:', parseError);
+        throw new Error('Error en la respuesta del servidor');
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.message || `Error ${res.status}: ${res.statusText}`);
+      }
+
+      console.log('✅ Inscripción exitosa:', data);
+      
+      // 🆕 FORZAR RECARGA INMEDIATA DE INSCRIPCIONES
+      await cargarInscripcionesConProgreso();
+      
+      return { 
+        success: true, 
+        data,
+        message: 'Inscripción realizada correctamente'
+      };
+      
+    } catch (err) {
+      console.error('❌ Error en inscripción:', err);
+      const errorMessage = err.message || 'Error al realizar la inscripción';
+      setError(errorMessage);
+      
+      return { 
+        success: false, 
+        error: errorMessage 
+      };
+    } finally {
+      setInscribiendo(false);
+    }
+  }, [idUsuario, cargarInscripcionesConProgreso]);
+
+  // 🆕 FUNCIÓN COMPLETAMENTE CORREGIDA: estaInscrito - acepta PAGADA como estado válido
+  const estaInscrito = useCallback((idCurso) => {
+    if (!idCurso || !inscripciones.length) {
+      console.log(`🔍 estaInscrito - Curso ${idCurso}: NO (sin datos)`, {
+        idCurso,
+        tieneInscripciones: inscripciones.length > 0
+      });
+      return false;
+    }
+
+    // 🆕 CORRECCIÓN: Convertir a número para comparación segura
+    const idCursoNum = Number(idCurso);
+    
+    const inscrito = inscripciones.some(insc => {
+      const inscIdCurso = Number(insc.id_curso);
+      
+      // 🆕 CORRECCIÓN CRÍTICA: Aceptar PAGADA como estado válido
+      const estadoValido = insc.estado === 'ACTIVA' || 
+                          insc.estado === 'ACTIVO' || 
+                          insc.estado === 'PAGADA' || 
+                          !insc.estado;
+      
+      const resultado = inscIdCurso === idCursoNum && estadoValido;
+      
+      if (resultado) {
+        console.log(`✅ estaInscrito - Curso ${idCurso}: SÍ INSCRITO`, {
+          inscripcionId: insc.id_inscripcion,
+          cursoId: insc.id_curso,
+          estado: insc.estado,
+          nombreCurso: insc.curso?.nombre_curso
+        });
+      }
+      
+      return resultado;
+    });
+
+    if (!inscrito) {
+      console.log(`❌ estaInscrito - Curso ${idCurso}: NO INSCRITO`, {
+        estadosEncontrados: inscripciones
+          .filter(i => Number(i.id_curso) === idCursoNum)
+          .map(i => ({ estado: i.estado, id_inscripcion: i.id_inscripcion })),
+        inscripcionesDisponibles: inscripciones.map(i => ({
+          id_curso: i.id_curso,
+          nombre: i.curso?.nombre_curso,
+          estado: i.estado
+        }))
+      });
+    }
+
+    return inscrito;
+  }, [inscripciones]);
+
+  // 🆕 FUNCIÓN MEJORADA: obtenerInscripcion - también acepta PAGADA
+  const obtenerInscripcion = useCallback((idCurso) => {
+    if (!idCurso || !inscripciones.length) return null;
+    
+    const idCursoNum = Number(idCurso);
+    const inscripcion = inscripciones.find(insc => 
+      Number(insc.id_curso) === idCursoNum && 
+      (insc.estado === 'ACTIVA' || insc.estado === 'ACTIVO' || insc.estado === 'PAGADA' || !insc.estado)
+    );
+    
+    console.log(`🔍 obtenerInscripcion - Curso ${idCurso}:`, inscripcion ? 'ENCONTRADA' : 'NO ENCONTRADA');
+    return inscripcion;
+  }, [inscripciones]);
+
   const marcarTemaCompletado = useCallback(async (idTemario) => {
     if (!idUsuario || !idTemario) {
       return { success: false, error: 'Datos incompletos' };
@@ -359,89 +510,6 @@ export const useInscripciones = (idUsuario) => {
     }
   }, [idUsuario, cargarInscripcionesConProgreso]);
 
-  const inscribirEnCurso = useCallback(async (idCurso, metodoPago = 'TARJETA') => {
-    if (!idUsuario || !idCurso) {
-      return { 
-        success: false, 
-        error: 'Datos incompletos para la inscripción' 
-      };
-    }
-
-    const metodosValidos = ['TARJETA', 'TRANSFERENCIA', 'BILLETERA'];
-    if (!metodosValidos.includes(metodoPago)) {
-      return {
-        success: false,
-        error: 'Método de pago no válido'
-      };
-    }
-
-    setInscribiendo(true);
-    setError(null);
-    
-    try {
-      console.log('🎯 Iniciando inscripción - Curso:', idCurso, 'Usuario:', idUsuario, 'Método:', metodoPago);
-      
-      const res = await fetch(`${API_BASE_URL}/inscripciones`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id_curso: Number(idCurso),
-          id_usuario: Number(idUsuario),
-          metodo_pago: metodoPago
-        })
-      });
-
-      console.log('📨 Respuesta del servidor - Status:', res.status);
-      
-      let data;
-      try {
-        data = await res.json();
-        console.log('📊 Datos de respuesta:', data);
-      } catch (parseError) {
-        console.error('❌ Error parseando respuesta JSON:', parseError);
-        throw new Error('Error en la respuesta del servidor');
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.message || `Error ${res.status}: ${res.statusText}`);
-      }
-
-      console.log('✅ Inscripción exitosa:', data);
-      
-      await cargarInscripcionesConProgreso();
-      
-      return { 
-        success: true, 
-        data,
-        message: 'Inscripción realizada correctamente'
-      };
-      
-    } catch (err) {
-      console.error('❌ Error en inscripción:', err);
-      const errorMessage = err.message || 'Error al realizar la inscripción';
-      setError(errorMessage);
-      
-      return { 
-        success: false, 
-        error: errorMessage 
-      };
-    } finally {
-      setInscribiendo(false);
-    }
-  }, [idUsuario, cargarInscripcionesConProgreso]);
-
-  const estaInscrito = (idCurso) => {
-    return inscripciones.some(insc => 
-      insc.id_curso === idCurso && insc.estado === 'ACTIVA'
-    );
-  };
-
-  const obtenerInscripcion = (idCurso) => {
-    return inscripciones.find(insc => insc.id_curso === idCurso);
-  };
-
   const obtenerProgresoCurso = useCallback(async (idCurso) => {
     const inscripcion = obtenerInscripcion(idCurso);
     if (inscripcion && inscripcion.progreso !== undefined) {
@@ -451,12 +519,12 @@ export const useInscripciones = (idUsuario) => {
     return await cargarProgresoCurso(idCurso);
   }, [cargarProgresoCurso, obtenerInscripcion]);
 
-  const estaCompletado = (idCurso) => {
+  const estaCompletado = useCallback((idCurso) => {
     const inscripcion = obtenerInscripcion(idCurso);
     return inscripcion ? 
       (inscripcion.progreso === 100 || inscripcion.estado_curso === 'COMPLETADO') : 
       false;
-  };
+  }, [obtenerInscripcion]);
 
   return { 
     inscripciones, 

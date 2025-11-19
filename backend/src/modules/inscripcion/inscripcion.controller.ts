@@ -1,12 +1,11 @@
 import { Controller, Post, Get, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { InscripcionService } from './inscripcion.service';
-import { CreateInscripcionDto } from './inscripcion.dto';
 
 @Controller('inscripciones')
 export class InscripcionController {
   constructor(private svc: InscripcionService) {}
 
-  // ✅ CREAR INSCRIPCIÓN CON PAGO Y PROGRESO
+  // ✅ CREAR INSCRIPCIÓN CON PAGO, PROGRESO Y CANJE
   @Post()
   create(@Body() body: any) {
     return this.svc.crearInscripcionCompleta(body);

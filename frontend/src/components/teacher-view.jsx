@@ -1,5 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { User, BookOpen, Trash2, PlusCircle, GraduationCap, X, Clock, List, CheckCircle, XCircle } from "lucide-react";
+import { 
+  User, 
+  BookOpen, 
+  Trash2, 
+  PlusCircle, 
+  GraduationCap, 
+  X, 
+  Clock, 
+  List, 
+  CheckCircle, 
+  XCircle,
+  AlertTriangle,
+  Calendar,
+  Users,
+  DollarSign,
+  Clock4,
+  Eye,
+  Edit3,
+  Search,
+  Filter
+} from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 
 export default function TeacherDashboard({ onNavigate }) {
@@ -11,11 +31,15 @@ export default function TeacherDashboard({ onNavigate }) {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [tipoCursos, setTipoCursos] = useState([]);
-  
-  // 🆕 Estado para notificaciones
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [enrollmentsData, setEnrollmentsData] = useState({});
+  const [totalEnrollments, setTotalEnrollments] = useState(0);
+
+  // Estado para notificaciones
   const [notification, setNotification] = useState({
     show: false,
-    type: '', // 'success', 'error', 'warning'
+    type: '',
     message: '',
     title: ''
   });
@@ -32,7 +56,7 @@ export default function TeacherDashboard({ onNavigate }) {
     modulos: [],
   });
 
-  // 🆕 Mostrar notificación
+  // Mostrar notificación
   const showNotification = (type, title, message) => {
     setNotification({
       show: true,
@@ -40,48 +64,125 @@ export default function TeacherDashboard({ onNavigate }) {
       title,
       message
     });
-    
-    // Auto-ocultar después de 5 segundos
     setTimeout(() => {
-      setNotification({ show: false, type: '', message: '', title: '' });
+      setNotification({
+        show: false,
+        type: '',
+        message: '',
+        title: ''
+      });
     }, 5000);
   };
 
-  // 🆕 Cerrar notificación manualmente
+  // Cerrar notificación manualmente
   const closeNotification = () => {
-    setNotification({ show: false, type: '', message: '', title: '' });
+    setNotification({
+      show: false,
+      type: '',
+      message: '',
+      title: ''
+    });
   };
 
-  // 🚀 Cargar cursos del docente
-  useEffect(() => {
+  // Cargar datos de inscripciones
+  const loadEnrollmentsData = async (coursesList) => {
+    try {
+      const response = await fetch("http://localhost:3000/api/inscripciones");
+      const allEnrollments = await response.json();
+      
+      if (Array.isArray(allEnrollments)) {
+        // Filtrar solo las inscripciones de los cursos del docente
+        const teacherCourseIds = coursesList.map(course => course.id_curso);
+        const teacherEnrollments = allEnrollments.filter(enrollment => 
+          teacherCourseIds.includes(enrollment.id_curso)
+        );
+
+        // Calcular inscritos por curso
+        const enrollmentsByCourse = {};
+        let total = 0;
+        
+        teacherEnrollments.forEach(enrollment => {
+          if (!enrollmentsByCourse[enrollment.id_curso]) {
+            enrollmentsByCourse[enrollment.id_curso] = {
+              enrolled: 0
+            };
+          }
+          enrollmentsByCourse[enrollment.id_curso].enrolled += 1;
+          total += 1;
+        });
+        
+        setEnrollmentsData(enrollmentsByCourse);
+        setTotalEnrollments(total);
+      }
+    } catch (error) {
+      console.error("Error cargando inscripciones:", error);
+    }
+  };
+
+  // Cargar cursos del docente
+  const loadCourses = async () => {
     if (!idUsuario) return;
     setLoading(true);
-    fetch(`http://localhost:3000/api/cursos?docente=${idUsuario}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setCourses(data);
-        else setError(data.message || "Error al cargar cursos");
-      })
-      .catch(() => setError("No se pudo conectar con el servidor"))
-      .finally(() => setLoading(false));
-  }, [idUsuario]);
+    try {
+      const response = await fetch(`http://localhost:3000/api/cursos?docente=${idUsuario}`);
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        setCourses(data);
+        // Cargar datos de inscripciones después de tener los cursos
+        await loadEnrollmentsData(data);
+      } else {
+        setError(data.message || "Error al cargar cursos");
+      }
+    } catch (error) {
+      setError("No se pudo conectar con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // 🟢 Cargar tipos de curso
+  // Cargar tipos de curso
   useEffect(() => {
     fetch("http://localhost:3000/api/tipos-curso")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) setTipoCursos(data);
-        else console.error("Error al obtener tipos de curso", data);
+        if (Array.isArray(data)) {
+          // Reemplazar "más alto" por "taller" en los nombres de tipo de curso
+          const updatedTipos = data.map(tipo => ({
+            ...tipo,
+            nombre_tipo_curso: tipo.nombre_tipo_curso.replace(/más alto/gi, 'taller')
+          }));
+          setTipoCursos(updatedTipos);
+        } else {
+          console.error("Error al obtener tipos de curso", data);
+        }
       })
       .catch((err) => console.error("Error al conectar con tipos de curso:", err));
   }, []);
 
-  // 🟢 Crear curso (SOLO CURSO, sin horarios y módulos)
+  useEffect(() => {
+    loadCourses();
+  }, [idUsuario]);
+
+  // Filtrar cursos
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.nombre_curso.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = selectedStatus === "ALL" || course.estado_disponibilidad === selectedStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Calcular estadísticas
+  const stats = {
+    total: courses.length,
+    active: courses.filter(c => c.estado_disponibilidad === 'ACTIVO').length,
+    totalEnrollments: totalEnrollments
+  };
+
+  // Crear curso
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     try {
-      // 🔥 SOLUCIÓN: Enviar solo los datos del curso, sin horarios y módulos
       const body = {
         nombre_curso: form.nombre_curso,
         descripcion: form.descripcion,
@@ -94,8 +195,6 @@ export default function TeacherDashboard({ onNavigate }) {
         id_tipo_curso: Number(form.id_tipo_curso),
       };
 
-      console.log("Enviando datos del curso:", body);
-
       const res = await fetch("http://localhost:3000/api/cursos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,17 +204,13 @@ export default function TeacherDashboard({ onNavigate }) {
       const newCourse = await res.json();
 
       if (res.ok && newCourse.id_curso) {
-        console.log("Curso creado exitosamente:", newCourse);
-        
-        // 🔥 CREAR HORARIOS Y MÓDULOS POR SEPARADO
         await createHorarios(newCourse.id_curso);
         await createModulos(newCourse.id_curso);
-        
-        // Actualizar lista de cursos
-        setCourses([...courses, newCourse]);
+
+        // Recargar cursos e inscripciones
+        await loadCourses();
         setShowModal(false);
         
-        // Resetear formulario
         setForm({
           nombre_curso: "",
           descripcion: "",
@@ -127,16 +222,13 @@ export default function TeacherDashboard({ onNavigate }) {
           horarios: [],
           modulos: [],
         });
-        
-        // 🆕 NOTIFICACIÓN DE ÉXITO
+
         showNotification(
           'success',
           '¡Curso Creado!',
           `El curso "${newCourse.nombre_curso}" ha sido creado exitosamente con todos sus componentes.`
         );
-        
       } else {
-        // 🆕 NOTIFICACIÓN DE ERROR
         showNotification(
           'error',
           'Error al Crear Curso',
@@ -145,7 +237,6 @@ export default function TeacherDashboard({ onNavigate }) {
       }
     } catch (err) {
       console.error(err);
-      // 🆕 NOTIFICACIÓN DE ERROR
       showNotification(
         'error',
         'Error de Conexión',
@@ -154,7 +245,7 @@ export default function TeacherDashboard({ onNavigate }) {
     }
   };
 
-  // 🔥 CREAR HORARIOS POR SEPARADO
+  // Crear horarios
   const createHorarios = async (cursoId) => {
     if (form.horarios.length === 0) return;
     
@@ -177,13 +268,12 @@ export default function TeacherDashboard({ onNavigate }) {
           body: JSON.stringify(horarioBody),
         });
       }
-      console.log("✅ Horarios creados exitosamente");
     } catch (error) {
-      console.error("❌ Error creando horarios:", error);
+      console.error("Error creando horarios:", error);
     }
   };
 
-  // 🔥 CREAR MÓDULOS POR SEPARADO
+  // Crear módulos
   const createModulos = async (cursoId) => {
     if (form.modulos.length === 0) return;
     
@@ -202,95 +292,102 @@ export default function TeacherDashboard({ onNavigate }) {
           body: JSON.stringify(moduloBody),
         });
       }
-      console.log("✅ Módulos creados exitosamente");
     } catch (error) {
-      console.error("❌ Error creando módulos:", error);
+      console.error("Error creando módulos:", error);
     }
   };
 
-  // 🗑 Eliminar curso
+  // Eliminar curso
   const handleDeleteCourse = async (id) => {
     if (!confirm("¿Estás seguro de eliminar este curso?")) return;
+    
     try {
-      const res = await fetch(`http://localhost:3000/api/cursos/${id}`, { method: "DELETE" });
+      const res = await fetch(`http://localhost:3000/api/cursos/${id}`, {
+        method: "DELETE"
+      });
+
       if (res.ok) {
-        setCourses(courses.filter((c) => c.id_curso !== id));
-        // 🆕 NOTIFICACIÓN DE ÉXITO
+        // Recargar cursos e inscripciones después de eliminar
+        await loadCourses();
         showNotification('success', 'Curso Eliminado', 'El curso ha sido eliminado exitosamente.');
       } else {
-        // 🆕 NOTIFICACIÓN DE ERROR
         showNotification('error', 'Error al Eliminar', 'No se pudo eliminar el curso. Intenta nuevamente.');
       }
     } catch (err) {
-      // 🆕 NOTIFICACIÓN DE ERROR
       showNotification('error', 'Error de Conexión', 'No se pudo conectar con el servidor.');
       console.error(err);
     }
   };
 
-  // ➕ Horarios dinámicos
+  // Funciones para horarios dinámicos
   const addHorario = () =>
-    setForm({ 
-      ...form, 
-      horarios: [...form.horarios, { 
-        dia_semana: "", 
-        hora_inicio: "", 
-        hora_fin: "",
-        fecha: "",
-        modalidad_sesion: form.modalidad,
-        enlace_virtual: "",
-        aula: ""
-      }] 
+    setForm({
+      ...form,
+      horarios: [
+        ...form.horarios,
+        {
+          dia_semana: "",
+          hora_inicio: "",
+          hora_fin: "",
+          fecha: "",
+          modalidad_sesion: form.modalidad,
+          enlace_virtual: "",
+          aula: ""
+        }
+      ]
     });
-    
+
   const removeHorario = (i) =>
-    setForm({ ...form, horarios: form.horarios.filter((_, idx) => idx !== i) });
-    
+    setForm({
+      ...form,
+      horarios: form.horarios.filter((_, idx) => idx !== i)
+    });
+
   const updateHorario = (i, key, value) => {
     const updated = [...form.horarios];
     updated[i][key] = value;
     setForm({ ...form, horarios: updated });
   };
 
-  // ➕ Módulos dinámicos
+  // Funciones para módulos dinámicos
   const addModulo = () =>
     setForm({
       ...form,
       modulos: [
         ...form.modulos,
-        { 
-          nombre_modulo: "", 
-          descripcion_modulo: "", 
+        {
+          nombre_modulo: "",
+          descripcion_modulo: "",
           orden_modulo: form.modulos.length + 1
         },
       ],
     });
-    
+
   const removeModulo = (i) =>
-    setForm({ ...form, modulos: form.modulos.filter((_, idx) => idx !== i) });
-    
+    setForm({
+      ...form,
+      modulos: form.modulos.filter((_, idx) => idx !== i)
+    });
+
   const updateModulo = (i, key, value) => {
     const updated = [...form.modulos];
     updated[i][key] = value;
     setForm({ ...form, modulos: updated });
   };
 
-  // 🆕 Estilos para las notificaciones
+  // Estilos para notificaciones
   const getNotificationStyles = () => {
     const baseStyles = "fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-xl shadow-2xl border-l-4 p-4 transform transition-all duration-300";
-    
     const typeStyles = {
       success: `${baseStyles} border-green-500`,
       error: `${baseStyles} border-red-500`,
       warning: `${baseStyles} border-yellow-500`
     };
-    
     return typeStyles[notification.type] || baseStyles;
   };
 
   const getNotificationIcon = () => {
     const iconClass = "w-6 h-6";
-    
     switch (notification.type) {
       case 'success':
         return <CheckCircle className={`${iconClass} text-green-500`} />;
@@ -302,8 +399,8 @@ export default function TeacherDashboard({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* 🆕 NOTIFICACIÓN BONITA */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      {/* NOTIFICACIÓN */}
       {notification.show && (
         <div className={getNotificationStyles()}>
           <div className="flex items-start gap-3">
@@ -325,13 +422,12 @@ export default function TeacherDashboard({ onNavigate }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-          
-          {/* Barra de progreso */}
           <div className="mt-3 w-full bg-gray-200 rounded-full h-1">
-            <div 
+            <div
               className={`h-1 rounded-full transition-all duration-5000 ${
-                notification.type === 'success' ? 'bg-green-500' : 
-                notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                notification.type === 'success' ? 'bg-green-500' :
+                notification.type === 'error' ? 'bg-red-500' :
+                'bg-blue-500'
               }`}
               style={{ width: '100%' }}
             />
@@ -339,101 +435,266 @@ export default function TeacherDashboard({ onNavigate }) {
         </div>
       )}
 
-      {/* HEADER */}
-      <header className="bg-blue-600 text-white shadow-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-blue-600" />
+      {/* HEADER PROFESIONAL */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 
+                  onClick={() => onNavigate("teacher-dashboard")}
+                  className="text-lg font-bold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                >
+                  Panel Docente
+                </h1>
+                <p className="text-xs text-slate-600">Gestión académica integral</p>
+              </div>
             </div>
-            <h1
-              onClick={() => onNavigate("teacher-dashboard")}
-              className="text-xl font-semibold cursor-pointer hover:underline"
-            >
-              Panel Docente
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-100 transition-all shadow-sm"
-            >
-              <PlusCircle className="w-5 h-5" /> Crear Curso
-            </button>
-            <button
-              onClick={() => onNavigate("teacher-profile")}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-100 transition-all shadow-sm"
-            >
-              <User className="w-5 h-5" /> Perfil
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Nuevo Curso
+              </button>
+              <button
+                onClick={() => onNavigate("teacher-profile")}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+              >
+                <User className="w-4 h-4" />
+                Perfil
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* MAIN */}
-      <main className="max-w-6xl mx-auto px-6 py-12">
-        <h2 className="text-3xl font-semibold text-blue-700 mb-3">
-          Bienvenido, {user?.nombre} {user?.apellido}
-        </h2>
-        <p className="text-gray-600 mb-8">
-          Gestiona tus cursos y administra tu contenido académico.
-        </p>
+      {/* MAIN CONTENT */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ENCABEZADO */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">
+            Bienvenido, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.nombre} {user?.apellido}</span>
+          </h2>
+          <p className="text-slate-600 max-w-2xl">
+            Gestiona tus cursos, organiza el contenido académico y mantén actualizada tu oferta educativa.
+          </p>
+        </div>
 
+        {/* ESTADÍSTICAS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 p-6 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-600 text-sm font-medium">Total Cursos</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 p-6 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-600 text-sm font-medium">Cursos Activos</p>
+                <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.active}</p>
+              </div>
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 p-6 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-600 text-sm font-medium">Total Inscripciones</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{stats.totalEnrollments}</p>
+                <p className="text-xs text-slate-500 mt-1">En todos los cursos</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* BARRA DE HERRAMIENTAS */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 p-6 mb-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+            <div className="flex-1 w-full">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Buscar cursos..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <select 
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                <option value="ALL">Todos los estados</option>
+                <option value="ACTIVO">Activos</option>
+                <option value="INACTIVO">Inactivos</option>
+              </select>
+              
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                <Filter className="w-4 h-4" />
+                Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MENSAJES DE ERROR */}
         {error && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded mb-6">
-            ⚠️ {error}
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
         )}
 
+        {/* GRID DE CURSOS */}
         {loading ? (
-          <p className="text-gray-600">Cargando cursos...</p>
-        ) : courses.length === 0 ? (
-          <p className="text-gray-600">No tienes cursos aún. ¡Crea uno!</p>
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="text-center py-16 bg-white/50 rounded-2xl border border-slate-200 shadow-sm">
+            <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">No se encontraron cursos</h3>
+            <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              {searchTerm || selectedStatus !== "ALL" 
+                ? "No hay cursos que coincidan con los filtros aplicados." 
+                : "Comienza creando tu primer curso educativo."}
+            </p>
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Crear Primer Curso
+            </button>
+          </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <div
-                key={course.id_curso}
-                className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all p-6 relative"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <BookOpen className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {course.nombre_curso}
-                  </h3>
-                </div>
-                <p className="text-gray-600 text-sm mb-4">{course.descripcion}</p>
-                <div className="text-sm text-gray-500 space-y-1">
-                  <p>
-                    <strong>Modalidad:</strong> {course.modalidad}
-                  </p>
-                  <p>
-                    <strong>Tipo:</strong>{" "}
-                    {course.tipo_curso?.nombre_tipo_curso || "—"}
-                  </p>
-                  <p>
-                    <strong>Costo:</strong> ${course.costo}
-                  </p>
-                  <p>
-                    <strong>Cupos:</strong> {course.cupos}
-                  </p>
-                  <p>
-                    <strong>Duración:</strong> {course.duracion} h
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDeleteCourse(course.id_curso)}
-                  className="absolute top-3 right-3 text-red-500 hover:text-red-700 transition"
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredCourses.map((course) => {
+              const courseEnrollments = enrollmentsData[course.id_curso] || { enrolled: 0 };
+              const courseTypeName = course.tipo_curso?.nombre_tipo_curso?.replace(/más alto/gi, 'taller') || "Sin categoría";
+              
+              return (
+                <div
+                  key={course.id_curso}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-lg hover:shadow-xl hover:border-slate-300 transition-all duration-500 group overflow-hidden"
                 >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                          <BookOpen className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="max-w-[70%]">
+                          <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {course.nombre_curso}
+                          </h3>
+                          <span className={`inline-block px-3 py-1 text-xs rounded-full font-medium mt-2 ${
+                            course.estado_disponibilidad === 'ACTIVO' 
+                              ? 'bg-emerald-500/20 text-emerald-700 border border-emerald-500/30' 
+                              : 'bg-slate-500/20 text-slate-700 border border-slate-500/30'
+                          }`}>
+                            {course.estado_disponibilidad}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCourse(course.id_curso)}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-600 text-sm mb-6 line-clamp-2 leading-relaxed">
+                      {course.descripcion}
+                    </p>
+
+                    <div className="space-y-3 text-sm mb-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Modalidad
+                        </span>
+                        <span className="text-slate-900 font-medium">{course.modalidad}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Cupos
+                        </span>
+                        <span className="text-slate-900 font-medium">{course.cupos} disponibles</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          Inversión
+                        </span>
+                        <span className="text-green-600 font-bold">${course.costo}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 flex items-center gap-2">
+                          <Clock4 className="w-4 h-4" />
+                          Duración
+                        </span>
+                        <span className="text-slate-900 font-medium">{course.duracion} horas</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600 flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Inscritos
+                        </span>
+                        <span className="text-blue-600 font-bold">{courseEnrollments.enrolled}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="px-6 py-4 bg-slate-100/50 border-t border-slate-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-600">
+                        {courseTypeName}
+                      </span>
+                      <button className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors flex items-center gap-1">
+                        Gestionar <Edit3 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </main>
 
-      {/* MODAL - FORMULARIO COMPLETO */}
+      {/* MODAL - FORMULARIO COMPLETO (VERSIÓN ORIGINAL RESTAURADA) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
           <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-8 relative animate-fadeInScale overflow-y-auto max-h-[95vh]">
@@ -443,11 +704,11 @@ export default function TeacherDashboard({ onNavigate }) {
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <h2 className="text-2xl font-semibold text-blue-700 mb-6 text-center">
               Crear Nuevo Curso
             </h2>
-            
+
             <form onSubmit={handleCreateCourse} className="space-y-6">
               {/* INFORMACIÓN BÁSICA */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -536,7 +797,6 @@ export default function TeacherDashboard({ onNavigate }) {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Cupos *
@@ -551,7 +811,6 @@ export default function TeacherDashboard({ onNavigate }) {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Duración (h) *
@@ -603,7 +862,6 @@ export default function TeacherDashboard({ onNavigate }) {
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Día de la semana</label>
@@ -615,7 +873,6 @@ export default function TeacherDashboard({ onNavigate }) {
                               onChange={(e) => updateHorario(index, 'dia_semana', e.target.value)}
                             />
                           </div>
-                          
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="block text-xs font-medium text-gray-600 mb-1">Hora inicio</label>
@@ -678,7 +935,6 @@ export default function TeacherDashboard({ onNavigate }) {
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        
                         <div className="space-y-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Nombre del módulo</label>
@@ -690,7 +946,6 @@ export default function TeacherDashboard({ onNavigate }) {
                               onChange={(e) => updateModulo(index, 'nombre_modulo', e.target.value)}
                             />
                           </div>
-                          
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
                             <textarea
