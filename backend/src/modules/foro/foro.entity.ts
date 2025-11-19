@@ -1,13 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Curso } from '../curso/curso.entity';
 import { Mensaje } from '../mensaje/mensaje.entity';
 
-@Entity({ name: 'foro' })
+@Entity('foro')
 export class Foro {
-  @PrimaryGeneratedColumn({ name: 'id_foro' })
+  @PrimaryGeneratedColumn()
   id_foro: number;
 
-  @OneToOne(() => Curso)
+  @ManyToOne(() => Curso, curso => curso.foros)
   @JoinColumn({ name: 'id_curso' })
   curso: Curso;
 
@@ -17,9 +17,9 @@ export class Foro {
   @Column({ type: 'text', nullable: true })
   descripcion: string;
 
-  @Column({ type: 'date', name: 'fecha_creacion', nullable: true })
-  fecha_creacion: string;
+  @Column({ type: 'timestamp', default: () => 'NOW()' })
+  fecha_creacion: Date;
 
-  @OneToMany(() => Mensaje, m => m.foro)
+  @OneToMany(() => Mensaje, mensaje => mensaje.foro)
   mensajes: Mensaje[];
 }

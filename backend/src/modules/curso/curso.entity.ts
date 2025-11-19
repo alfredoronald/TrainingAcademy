@@ -4,6 +4,7 @@ import { TipoCurso } from '../tipo-curso/tipo-curso.entity';
 import { HorarioCurso } from '../horario-curso/horario-curso.entity';
 import { Modulo } from '../modulo/modulo.entity';
 import { ProgresoCurso } from '../progreso-curso/progreso-curso.entity';
+import { Foro } from '../foro/foro.entity';
 
 @Entity({ name: 'curso' })
 export class Curso {
@@ -61,4 +62,7 @@ export class Curso {
   // 🆕 Relación con ProgresoCurso
   @OneToMany(() => ProgresoCurso, progresoCurso => progresoCurso.curso)
   progresos: ProgresoCurso[];
+  @OneToMany(() => Foro, foro => foro.curso)
+foros: Foro[];
+
 }
