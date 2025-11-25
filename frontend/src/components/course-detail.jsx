@@ -14,11 +14,13 @@ const CourseDetail = ({ onNavigate, onBack, courseId }) => {
 
   const { estaInscrito, inscribirEnCurso, inscribiendo } = useInscripciones(user?.id_usuario);
 
-  // Foro
+  // Foro - Estados mejorados
   const [forumMessages, setForumMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
   const [loadingForum, setLoadingForum] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendingReply, setSendingReply] = useState(false);
 
   const id = courseId;
 
@@ -31,7 +33,7 @@ const CourseDetail = ({ onNavigate, onBack, courseId }) => {
   }, [id, user]);
 
   useEffect(() => {
-    if (user) {
+    if (user && id) {
       const enrolled = estaInscrito(parseInt(id));
       setIsEnrolled(enrolled);
       if (enrolled) fetchProgress();
@@ -86,20 +88,82 @@ const CourseDetail = ({ onNavigate, onBack, courseId }) => {
     onNavigate("coursePlayer", { cursoId: parseInt(id) });
   };
 
-  // ----------------- FORO -----------------
+  // ----------------- FORO CORREGIDO -----------------
 
   const fetchForumMessages = async () => {
     try {
       setLoadingForum(true);
-      const res = await fetch(`http://localhost:3000/api/foro/${id}`);
-      const data = await res.json();
-      let mensajes = [];
-      if (Array.isArray(data)) {
-        mensajes = data;
-      } else if (data && Array.isArray(data.mensajes)) {
-        mensajes = data.mensajes;
+      
+      const mensajesRes = await fetch(`http://localhost:3000/api/foro/${id}/mensajes`);
+      if (!mensajesRes.ok) {
+        setForumMessages([]);
+        return;
       }
-      setForumMessages(mensajes);
+      
+      const mensajesData = await mensajesRes.json();
+      
+      // Función auxiliar para formatear fecha
+      const formatearFecha = (fecha_envio, hora_envio) => {
+        if (!fecha_envio) return 'Fecha no disponible';
+        
+        try {
+          // Intentar diferentes formatos de fecha
+          let fechaObj;
+          
+          if (hora_envio) {
+            // Si tenemos hora, intentar combinar
+            fechaObj = new Date(`${fecha_envio}T${hora_envio}`);
+          } else {
+            fechaObj = new Date(fecha_envio);
+          }
+          
+          // Si la fecha es inválida, intentar parsear manualmente
+          if (isNaN(fechaObj.getTime())) {
+            // Parsear manualmente el formato YYYY-MM-DD
+            const [year, month, day] = fecha_envio.split('-');
+            if (hora_envio) {
+              const [hours, minutes, seconds] = hora_envio.split(':');
+              fechaObj = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+            } else {
+              fechaObj = new Date(year, month - 1, day);
+            }
+          }
+          
+          // Verificar nuevamente si es válida
+          if (!isNaN(fechaObj.getTime())) {
+            return fechaObj.toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          } else {
+            // Si todo falla, mostrar el formato original
+            return `${fecha_envio} ${hora_envio || ''}`.trim();
+          }
+        } catch (error) {
+          console.error('Error formateando fecha:', error);
+          return `${fecha_envio} ${hora_envio || ''}`.trim();
+        }
+      };
+
+      // Formatear los mensajes para el frontend
+      const formatMessages = (messages) => {
+        return messages.map(msg => ({
+          id_mensaje: msg.id_mensaje,
+          contenido: msg.contenido,
+          fecha_publicacion: formatearFecha(msg.fecha_envio, msg.hora_envio),
+          usuario: {
+            id_usuario: msg.usuario?.id_usuario,
+            nombre: msg.usuario?.nombre || 'Usuario',
+            apellido: msg.usuario?.apellido || ''
+          },
+          respuestas: msg.respuestas ? formatMessages(msg.respuestas) : []
+        }));
+      };
+      
+      setForumMessages(formatMessages(mensajesData));
     } catch (err) {
       console.error("Error cargando mensajes del foro:", err);
       setForumMessages([]);
@@ -109,38 +173,187 @@ const CourseDetail = ({ onNavigate, onBack, courseId }) => {
   };
 
   const handleSendMessage = async () => {
-  if (!user) {
-    alert("Debes iniciar sesión para escribir en el foro.");
-    return;
-  }
-  if (!newMessage.trim()) return;
+    if (!user) {
+      alert("Debes iniciar sesión para escribir en el foro.");
+      return;
+    }
+    if (!newMessage.trim()) return;
 
-  try {
-    setSendingMessage(true);
+    try {
+      setSendingMessage(true);
 
-    const res = await fetch(`http://localhost:3000/api/foro/${id}/mensaje`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contenido: newMessage }), // SOLO contenido
-    });
+      const res = await fetch(`http://localhost:3000/api/foro/${id}/mensaje`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          contenido: newMessage,
+          id_usuario: user.id_usuario
+        }),
+      });
 
-    if (!res.ok) throw new Error("Error al enviar mensaje");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al enviar mensaje");
+      }
 
-    const savedMessage = await res.json();
-    setForumMessages(prev => [...prev, savedMessage]);
-    setNewMessage("");
+      // Recargar mensajes en lugar de agregar manualmente
+      await fetchForumMessages();
+      setNewMessage("");
 
-  } catch (err) {
-    console.error("Error publicando mensaje:", err);
-    alert("No se pudo enviar el mensaje");
-  } finally {
-    setSendingMessage(false);
-  }
-};
+    } catch (err) {
+      console.error("Error publicando mensaje:", err);
+      alert("No se pudo enviar el mensaje: " + err.message);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
+  const handleSendReply = async (parentMessageId, replyContent) => {
+    if (!user || !replyContent.trim()) return;
 
+    try {
+      setSendingReply(true);
 
+      const res = await fetch(`http://localhost:3000/api/foro/${id}/mensaje`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          contenido: replyContent,
+          id_usuario: user.id_usuario,
+          id_mensaje_respuesta: parentMessageId
+        }),
+      });
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al enviar respuesta");
+      }
+
+      // Recargar mensajes
+      await fetchForumMessages();
+      setReplyingTo(null);
+
+    } catch (err) {
+      console.error("Error publicando respuesta:", err);
+      alert("No se pudo enviar la respuesta: " + err.message);
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleStartReply = (messageId) => {
+    setReplyingTo(messageId);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+  };
+
+  // Componente separado para el formulario de respuesta
+  const ReplyForm = ({ messageId, onCancel, onSubmit, sendingReply }) => {
+    const [localReplyContent, setLocalReplyContent] = useState('');
+
+    const handleSubmit = () => {
+      onSubmit(messageId, localReplyContent);
+    };
+
+    const handleCancel = () => {
+      setLocalReplyContent("");
+      onCancel();
+    };
+
+    return (
+      <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <textarea
+          value={localReplyContent}
+          onChange={(e) => setLocalReplyContent(e.target.value)}
+          placeholder="Escribe tu respuesta..."
+          className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          rows="2"
+          maxLength="500"
+        />
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-sm text-gray-500">
+            {localReplyContent.length}/500 caracteres
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancel}
+              className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={sendingReply || !localReplyContent.trim()}
+              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {sendingReply ? "Enviando..." : "Enviar Respuesta"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Componente recursivo para mostrar mensajes y respuestas
+  const MessageItem = ({ message, level = 0 }) => {
+    const marginLeft = level * 24;
+    
+    return (
+      <div className="message-item" style={{ marginLeft: `${marginLeft}px` }}>
+        <div className={`border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow ${level > 0 ? 'bg-gray-50' : ''}`}>
+          <div className="flex justify-between items-start mb-2">
+            <p className="font-semibold text-blue-700">
+              {message.usuario?.nombre} {message.usuario?.apellido}
+            </p>
+            <small className="text-gray-500 text-sm">
+              {message.fecha_publicacion || ''}
+            </small>
+          </div>
+          <p className="text-gray-800 mt-2 whitespace-pre-wrap">{message.contenido}</p>
+          
+          {/* Botones de acción */}
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => handleStartReply(message.id_mensaje)}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              <span>↩️</span>
+              Responder
+            </button>
+          </div>
+
+          {/* Formulario de respuesta */}
+          {replyingTo === message.id_mensaje && (
+            <ReplyForm
+              messageId={message.id_mensaje}
+              onCancel={handleCancelReply}
+              onSubmit={handleSendReply}
+              sendingReply={sendingReply}
+            />
+          )}
+        </div>
+
+        {/* Respuestas anidadas */}
+        {message.respuestas && message.respuestas.length > 0 && (
+          <div className="mt-3 space-y-3">
+            {message.respuestas.map((respuesta) => (
+              <MessageItem 
+                key={respuesta.id_mensaje} 
+                message={respuesta} 
+                level={level + 1} 
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ----------------- RENDER -----------------
 
@@ -161,7 +374,7 @@ const CourseDetail = ({ onNavigate, onBack, courseId }) => {
         <p className="text-gray-600 mb-4">{error}</p>
         <button
           onClick={() => onNavigate('catalog')}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           Volver al Catálogo
         </button>
@@ -308,50 +521,83 @@ const CourseDetail = ({ onNavigate, onBack, courseId }) => {
               )}
             </div>
 
-            {/* === FORO === */}
-            <div className="forum-section mt-10">
-              <h3>Foro del Curso</h3>
+            {/* === FORO CON SISTEMA DE RESPUESTAS === */}
+            <div className="forum-section mt-10 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Foro del Curso</h3>
 
               {loadingForum ? (
-                <p>Cargando mensajes...</p>
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-gray-600">Cargando mensajes...</p>
+                </div>
               ) : forumMessages.length === 0 ? (
-                <p className="text-gray-500">No hay mensajes en el foro.</p>
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <span className="text-4xl mb-2">💬</span>
+                  <p>No hay mensajes en el foro. ¡Sé el primero en comentar!</p>
+                </div>
               ) : (
-                <div className="space-y-4 mt-4">
-                  {forumMessages.map((msg) => (
-                    <div key={msg.id_mensaje} className="border border-gray-300 rounded-lg p-3 bg-white shadow-sm">
-                      <p className="font-semibold text-blue-700">{msg.usuario?.nombre || "Usuario"}</p>
-                      <p className="text-gray-800 mt-1">{msg.contenido}</p>
-                      <small className="text-gray-500">{msg.fecha_publicacion ? new Date(msg.fecha_publicacion).toLocaleString() : ""}</small>
-                    </div>
+                <div className="space-y-4 mt-4 max-h-96 overflow-y-auto p-2">
+                  {forumMessages.map((message) => (
+                    <MessageItem key={message.id_mensaje} message={message} />
                   ))}
                 </div>
               )}
 
-              {/* Input de mensaje */}
-              {user ? (
-                isEnrolled ? (
-                  <div className="forum-input mt-4 flex gap-2">
-                    <textarea
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Escribe un mensaje..."
-                      className="flex-1 border border-gray-300 rounded p-2"
-                    />
+              {/* Input para nuevo mensaje (no respuesta) */}
+              <div className="mt-6">
+                {user ? (
+                  isEnrolled ? (
+                    <div className="forum-input flex flex-col gap-3">
+                      <h4 className="font-semibold text-gray-700">Nuevo Mensaje:</h4>
+                      <textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Escribe un nuevo mensaje para el foro..."
+                        className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                        rows="3"
+                        maxLength="500"
+                      />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500">
+                          {newMessage.length}/500 caracteres
+                        </span>
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={sendingMessage || !newMessage.trim()}
+                          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {sendingMessage ? (
+                            <span className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Enviando...
+                            </span>
+                          ) : (
+                            "Publicar Mensaje"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <p className="text-yellow-700">
+                        📚 Debes inscribirte en el curso para publicar en el foro
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-blue-700">
+                      🔐 Inicia sesión para participar en el foro
+                    </p>
                     <button
-                      onClick={handleSendMessage}
-                      disabled={sendingMessage}
-                      className="bg-blue-600 text-white px-4 py-2 rounded"
+                      onClick={() => onNavigate('login-estudent')}
+                      className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      {sendingMessage ? "Enviando..." : "Publicar"}
+                      Iniciar Sesión
                     </button>
                   </div>
-                ) : (
-                  <p className="mt-4 text-gray-500">Debes inscribirte para publicar en el foro</p>
-                )
-              ) : (
-                <p className="mt-4 text-gray-500">Inicia sesión para participar en el foro</p>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

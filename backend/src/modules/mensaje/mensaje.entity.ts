@@ -1,24 +1,47 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
-import { Usuario } from '../usuario/usuario.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, PrimaryColumn, JoinColumn } from 'typeorm';
 import { Foro } from '../foro/foro.entity';
+import { Usuario } from '../usuario/usuario.entity';
 
-@Entity({ name: 'mensaje' })
+@Entity('mensaje')
 export class Mensaje {
-
-  @PrimaryGeneratedColumn({ name: 'id_mensaje' })
+  @PrimaryColumn({ name: 'id_mensaje', type: 'int' })
   id_mensaje: number;
 
-  @Column({ type: 'text', name: 'contenido' }) // ⚠ nombre exacto
+  @Column({ name: 'id_foro', type: 'int' })
+  id_foro: number;
+
+  @Column({ name: 'id_usuario', type: 'int' })
+  id_usuario: number;
+
+  @Column({ name: 'contenido', type: 'text' })
   contenido: string;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'fecha_publicacion' })
-  fecha_publicacion: Date;
+  @Column({ 
+    name: 'fecha_envio', 
+    type: 'date', 
+    default: () => 'CURRENT_DATE' 
+  })
+  fecha_envio: Date;
 
-  @ManyToOne(() => Foro, foro => foro.mensajes, { onDelete: 'CASCADE' })
+  @Column({ 
+    name: 'hora_envio', 
+    type: 'time', 
+    default: () => 'CURRENT_TIME' 
+  })
+  hora_envio: string;
+
+  @Column({ 
+    name: 'id_mensaje_respuesta', 
+    type: 'int', 
+    nullable: true 
+  })
+  id_mensaje_respuesta: number;
+
+  @ManyToOne(() => Foro, foro => foro.mensajes)
   @JoinColumn({ name: 'id_foro' })
   foro: Foro;
 
-  @ManyToOne(() => Usuario, usuario => usuario.mensajes, { onDelete: 'CASCADE', eager: true })
+  @ManyToOne(() => Usuario)
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 }

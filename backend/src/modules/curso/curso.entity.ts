@@ -62,7 +62,6 @@ export class Curso {
   // 🆕 Relación con ProgresoCurso
   @OneToMany(() => ProgresoCurso, progresoCurso => progresoCurso.curso)
   progresos: ProgresoCurso[];
-  @OneToMany(() => Foro, foro => foro.curso)
-foros: Foro[];
+ 
 
 }
