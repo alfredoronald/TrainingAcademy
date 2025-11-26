@@ -19,6 +19,7 @@ import MyCoursesScreen from './components/MyCoursesScreen';
 import CourseDetail from './components/course-detail.jsx';
 import RewardsScreen from './components/RewardsScreen';
 import ReporteSemanal from "./components/ReporteSemanal";
+import RolesPanel from './components/roles-panel.jsx';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -239,6 +240,11 @@ function App() {
       case 'admin-dashboard':
         return (
           <AdminDashboard {...commonProps} />
+        );
+      
+      case 'admin-permissions':
+        return (
+          <RolesPanel {...commonProps} />
         );
 
       case 'course-detail':
