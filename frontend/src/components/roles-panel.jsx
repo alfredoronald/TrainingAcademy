@@ -21,13 +21,15 @@ export default function RolesPanel({ onNavigate }) {
       setUsuarios(dataUsuarios);
       setRoles(dataRoles);
     } catch (err) {
-      console.error("Error cargando roles", err);
+      console.error("Error cargando datos", err);
     } finally {
       setLoading(false);
     }
   };
 
   const asignarRol = async (id_usuario, id_rol) => {
+    if (!id_rol) return;
+
     try {
       const res = await fetch(
         `http://localhost:3000/api/usuarios/${id_usuario}/rol`,
@@ -38,19 +40,20 @@ export default function RolesPanel({ onNavigate }) {
         }
       );
 
-      if (res.ok) {
-        alert("Rol asignado correctamente");
-        cargarDatos();
-      }
+      if (!res.ok) throw new Error("Error al asignar rol");
+
+      alert("Rol asignado correctamente");
+      cargarDatos(); // refrescar lista
     } catch (err) {
       console.error("Error asignando rol", err);
+      alert("Error al asignar rol");
     }
   };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
-      {/* 🔙 Botón Volver */}
+      {/* 🔙 Volver */}
       <button
         onClick={() => onNavigate("admin-dashboard")}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition mb-6"
@@ -72,9 +75,8 @@ export default function RolesPanel({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🟦 Card Contenedora */}
+      {/* 🟦 Tarjeta Contenedora */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
@@ -92,41 +94,48 @@ export default function RolesPanel({ onNavigate }) {
               </thead>
 
               <tbody>
-                {usuarios.map((u, index) => (
-                  <tr
-                    key={u.id_usuario}
-                    className={`border-b ${
-                      index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                    }`}
-                  >
-                    <td className="py-3 px-4 font-medium">{u.nombre}</td>
-                    <td className="py-3 px-4">{u.correo_electronico}</td>
-                    <td className="py-3 px-4 font-semibold text-purple-700">
-                      {u.rol_nombre || "Sin rol"}
-                    </td>
+                {usuarios.map((u, index) => {
+                  const rolActualID = u.detalleRoles?.[0]?.id_rol || "";
+                  const rolActualNombre =
+                    u.detalleRoles?.[0]?.rol?.nombre_rol || "Sin rol";
 
-                    <td className="py-3 px-4 text-center">
-                      <select
-                        className="border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm shadow-sm hover:border-purple-400 transition cursor-pointer"
-                        onChange={(e) =>
-                          asignarRol(u.id_usuario, Number(e.target.value))
-                        }
-                      >
-                        <option value="">Seleccionar rol...</option>
-                        {roles.map((r) => (
-                          <option key={r.id_rol} value={r.id_rol}>
-                            {r.nombre_rol}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                  return (
+                    <tr
+                      key={u.id_usuario}
+                      className={`border-b ${
+                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                      }`}
+                    >
+                      <td className="py-3 px-4 font-medium">{u.nombre}</td>
+                      <td className="py-3 px-4">{u.correo_electronico}</td>
+
+                      <td className="py-3 px-4 font-semibold text-purple-700">
+                        {rolActualNombre}
+                      </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <select
+                          className="border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm shadow-sm hover:border-purple-400 transition cursor-pointer"
+                          value={rolActualID}
+                          onChange={(e) =>
+                            asignarRol(u.id_usuario, Number(e.target.value))
+                          }
+                        >
+                          <option value="">Seleccionar rol...</option>
+                          {roles.map((r) => (
+                            <option key={r.id_rol} value={r.id_rol}>
+                              {r.nombre_rol}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
-
       </div>
     </div>
   );

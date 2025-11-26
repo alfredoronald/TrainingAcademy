@@ -618,12 +618,12 @@ export default function AdminDashboard({ onNavigate }) {
 
           <div className="flex items-center gap-3">
             <button
-  onClick={() => onNavigate("admin-permissions")}
-  className=" flex items-center gap-2 px-4 py-2 bg-white font-medium text-indigo-700 rounded-lg shadow hover:bg-indigo-700 transition"
->
-  <User className="w-4 h-4" />
-  Gestionar Roles
-</button>
+              onClick={() => onNavigate("admin-permissions")}
+              className=" flex items-center gap-2 px-4 py-2 bg-white font-medium text-indigo-700 rounded-lg shadow hover:bg-indigo-700 transition"
+            >
+              <User className="w-4 h-4" />
+              Gestionar Roles
+            </button>
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-white text-blue-800 rounded-lg hover:bg-blue-50 transition-colors font-medium shadow-sm"

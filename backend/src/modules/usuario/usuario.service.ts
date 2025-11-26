@@ -190,4 +190,13 @@ async create(data: Partial<Usuario> & { rol?: string }) {
       return null;
     }
   }
+  async actualizarRol(id_usuario: number, id_rol: number) {
+  await this.detalleRolRepository.delete({ id_usuario });
+
+  return await this.detalleRolRepository.save({
+    id_usuario,
+    id_rol,
+  });
+}
+
 }

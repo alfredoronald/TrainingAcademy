@@ -3,7 +3,7 @@ import { UsuarioService } from './usuario.service';
 
 @Controller('usuarios')
 export class UsuarioController {
-  constructor(private svc: UsuarioService) {}
+  constructor(private readonly svc: UsuarioService) {}
 
   @Post()
   create(@Body() body: any) {
@@ -23,6 +23,15 @@ export class UsuarioController {
   @Put(':id')
   update(@Param('id') id: string, @Body() body: any) {
     return this.svc.update(Number(id), body);
+  }
+
+  // ✅ CORREGIDO: ruta, uso de "svc", y tipos
+  @Put(':id/rol')
+  async actualizarRol(
+    @Param('id') id: string,
+    @Body() body: { id_rol: number },
+  ) {
+    return this.svc.actualizarRol(Number(id), body.id_rol);
   }
 
   @Delete(':id')
