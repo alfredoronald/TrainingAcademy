@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { 
   User, Book, Trash2, PlusCircle, GraduationCap, Edit, X, 
   TrendingUp, Users, DollarSign, Gift, CheckCircle, Clock, 
-  Tag, RefreshCw 
+  Tag, RefreshCw, LogOut
 } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 
 export default function AdminDashboard({ onNavigate }) {
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
 
   const [courses, setCourses] = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
@@ -26,6 +26,26 @@ export default function AdminDashboard({ onNavigate }) {
     horarios: [],
     modulos: [],
   });
+
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    if (window.confirm("¿Estás seguro de que quieres cerrar sesión?")) {
+      try {
+        // Primero llamar a logout del contexto
+        logout();
+        
+        // Luego navegar a la pantalla de bienvenida
+        setTimeout(() => {
+          onNavigate('welcome');
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error durante logout:', error);
+        // Si hay error, forzar navegación
+        onNavigate('welcome');
+      }
+    }
+  };
 
   useEffect(() => {
     fetchCourses();
@@ -602,6 +622,15 @@ export default function AdminDashboard({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* BOTÓN CERRAR SESIÓN EN ESQUINA SUPERIOR DERECHA */}
+      <button
+        onClick={handleLogout}
+        className="fixed top-4 right-4 z-50 bg-red-500 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition-colors"
+        title="Cerrar sesión"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
+
       <header className="bg-blue-800 text-white border-b border-blue-900 sticky top-0 z-10 shadow-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">

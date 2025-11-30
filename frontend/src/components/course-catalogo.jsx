@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal, Gift, Tag, RefreshCw } from "lucide-react";
+import { GraduationCap, Award, Trophy, User, Users, Star, ShoppingCart, FileText, Medal, Gift, Tag, RefreshCw, LogOut } from "lucide-react";
 import { useCursos } from "../hooks/useCursos";
 import { usePuntajeUsuario } from "../hooks/usePuntajeUsuario";
 import { useInscripciones } from "../hooks/useInscripciones";
@@ -7,7 +7,7 @@ import { useAuthContext } from "../context/AuthContext";
 import { useCanjes } from "../hooks/useCanjes";
 
 export default function CourseCatalogScreen({ onNavigate }) {
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
   const idUsuario = user?.id_usuario;
   const { courses, errorCursos, loadingCursos, refetch: refetchCursos } = useCursos();
   const { puntos, errorPuntos, loadingPuntos, refetch: refetchPuntos } = usePuntajeUsuario(idUsuario);
@@ -34,6 +34,27 @@ export default function CourseCatalogScreen({ onNavigate }) {
   const [mostrarSeleccionCanje, setMostrarSeleccionCanje] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Función para cerrar sesión - CORREGIDA
+  const handleLogout = () => {
+    if (window.confirm("¿Estás seguro de que quieres cerrar sesión?")) {
+      try {
+        // Primero llamar a logout del contexto
+        logout();
+        
+        // Luego navegar a la pantalla de selección de roles
+        // Esperar un momento para asegurar que el logout se complete
+        setTimeout(() => {
+          onNavigate('role-selection');
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error durante logout:', error);
+        // Si hay error, forzar navegación
+        onNavigate('role-selection');
+      }
+    }
+  };
 
   // Cargar permisos del usuario
   const loadUserPermissions = async () => {
@@ -691,6 +712,15 @@ export default function CourseCatalogScreen({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* BOTÓN CERRAR SESIÓN EN ESQUINA SUPERIOR DERECHA */}
+      <button
+        onClick={handleLogout}
+        className="fixed top-4 right-4 z-50 bg-red-500 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition-colors"
+        title="Cerrar sesión"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
+
       {/* HEADER ACTUALIZADO CON LOS BOTONES DEL PRIMER COURSE CATALOG */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">

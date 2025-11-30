@@ -9,12 +9,13 @@ import {
   Search,
   Filter,
   Shield,
-  FileText
+  FileText,
+  LogOut
 } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 
 export default function TeacherDashboard({ onNavigate }) {
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
   const idUsuario = user?.id_usuario;
 
   const [courses, setCourses] = useState([]);
@@ -50,6 +51,26 @@ export default function TeacherDashboard({ onNavigate }) {
     horarios: [],
     modulos: [],
   });
+
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    if (window.confirm("¿Estás seguro de que quieres cerrar sesión?")) {
+      try {
+        // Primero llamar a logout del contexto
+        logout();
+        
+        // Luego navegar a la pantalla de selección de roles
+        setTimeout(() => {
+          onNavigate('role-selection');
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error durante logout:', error);
+        // Si hay error, forzar navegación
+        onNavigate('role-selection');
+      }
+    }
+  };
 
   // Cargar permisos del usuario
   const loadUserPermissions = async () => {
@@ -526,6 +547,15 @@ export default function TeacherDashboard({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      {/* BOTÓN CERRAR SESIÓN EN ESQUINA SUPERIOR DERECHA */}
+      <button
+        onClick={handleLogout}
+        className="fixed top-4 right-4 z-50 bg-red-500 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition-colors"
+        title="Cerrar sesión"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
+
       {/* NOTIFICACIÓN */}
       {notification.show && (
         <div className={getNotificationStyles()}>
