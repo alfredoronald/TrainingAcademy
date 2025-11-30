@@ -1,24 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { 
-  User, 
-  BookOpen, 
-  Trash2, 
-  PlusCircle, 
-  GraduationCap, 
-  X, 
-  Clock, 
-  List, 
-  CheckCircle, 
-  XCircle,
-  AlertTriangle,
-  Calendar,
-  Users,
+  User, BookOpen, Trash2, PlusCircle, GraduationCap, X, Clock, List, CheckCircle, XCircle, AlertTriangle,
+  Calendar, Users,
   DollarSign,
   Clock4,
   Eye,
   Edit3,
   Search,
-  Filter
+  Filter,
+  Shield,
+  FileText
 } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 
@@ -35,6 +26,10 @@ export default function TeacherDashboard({ onNavigate }) {
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [enrollmentsData, setEnrollmentsData] = useState({});
   const [totalEnrollments, setTotalEnrollments] = useState(0);
+
+  // Nuevos estados para permisos
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -55,6 +50,75 @@ export default function TeacherDashboard({ onNavigate }) {
     horarios: [],
     modulos: [],
   });
+
+  // Cargar permisos del usuario
+  const loadUserPermissions = async () => {
+    if (!idUsuario) return;
+    
+    try {
+      setPermissionsLoading(true);
+      
+      // Obtener el usuario con sus roles
+      const resUsuario = await fetch(`http://localhost:3000/api/usuarios/${idUsuario}`);
+      if (!resUsuario.ok) throw new Error("Error al cargar usuario");
+      
+      const dataUsuario = await resUsuario.json();
+      
+      // Acceder correctamente a los datos del usuario
+      const usuarioActual = dataUsuario.data || dataUsuario;
+      
+      // Obtener el rol del usuario
+      const rolUsuario = usuarioActual.detalleRoles?.[0]?.rol;
+      
+      if (rolUsuario && rolUsuario.id_rol) {
+        // Cargar permisos del rol usando el endpoint proporcionado
+        const resPermisos = await fetch(`http://localhost:3000/api/roles/${rolUsuario.id_rol}/permisos`);
+        if (!resPermisos.ok) throw new Error("Error al cargar permisos del rol");
+        
+        const dataPermisos = await resPermisos.json();
+        
+        // Acceder correctamente a los permisos
+        const permisosDelRol = dataPermisos.data || dataPermisos;
+        
+        if (Array.isArray(permisosDelRol)) {
+          // Extraer los nombres de los permisos correctamente
+          const nombresPermisos = permisosDelRol.map(p => p.nombre_permiso || p.nombre);
+          setUserPermissions(nombresPermisos);
+        } else {
+          setUserPermissions([]);
+        }
+      } else {
+        setUserPermissions([]);
+      }
+    } catch (err) {
+      console.error("Error cargando permisos del usuario:", err);
+      setUserPermissions([]);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
+
+  // Verificar si el usuario tiene un permiso específico
+  const hasPermission = (permissionName) => {
+    return userPermissions.includes(permissionName);
+  };
+
+  // Verificar permisos específicos para cada acción
+  const canCreateCourse = () => {
+    return hasPermission('crear_curso');
+  };
+
+  const canEditCourse = () => {
+    return hasPermission('editar_curso');
+  };
+
+  const canEnrollInCourse = () => {
+    return hasPermission('inscribir_curso');
+  };
+
+  const canViewAcademicReports = () => {
+    return hasPermission('ver_reportes_academicos');
+  };
 
   // Mostrar notificación
   const showNotification = (type, title, message) => {
@@ -161,7 +225,10 @@ export default function TeacherDashboard({ onNavigate }) {
   }, []);
 
   useEffect(() => {
-    loadCourses();
+    if (idUsuario) {
+      loadCourses();
+      loadUserPermissions();
+    }
   }, [idUsuario]);
 
   // Filtrar cursos
@@ -182,6 +249,17 @@ export default function TeacherDashboard({ onNavigate }) {
   // Crear curso
   const handleCreateCourse = async (e) => {
     e.preventDefault();
+    
+    // Verificar permisos antes de crear el curso
+    if (!canCreateCourse()) {
+      showNotification(
+        'error',
+        'Permiso Denegado',
+        'No tienes permisos para crear cursos. Contacta al administrador.'
+      );
+      return;
+    }
+
     try {
       const body = {
         nombre_curso: form.nombre_curso,
@@ -299,6 +377,16 @@ export default function TeacherDashboard({ onNavigate }) {
 
   // Eliminar curso
   const handleDeleteCourse = async (id) => {
+    // Verificar permisos antes de eliminar
+    if (!canEditCourse()) {
+      showNotification(
+        'error',
+        'Permiso Denegado',
+        'No tienes permisos para eliminar cursos.'
+      );
+      return;
+    }
+
     if (!confirm("¿Estás seguro de eliminar este curso?")) return;
     
     try {
@@ -398,6 +486,44 @@ export default function TeacherDashboard({ onNavigate }) {
     }
   };
 
+  // Componente para el botón de crear curso con verificación de permisos
+  const CreateCourseButton = () => {
+    if (permissionsLoading) {
+      return (
+        <button
+          disabled
+          className="flex items-center gap-2 px-4 py-2 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed"
+        >
+          <PlusCircle className="w-4 h-4" />
+          Cargando permisos...
+        </button>
+      );
+    }
+
+    if (!canCreateCourse()) {
+      return (
+        <button
+          disabled
+          className="flex items-center gap-2 px-4 py-2 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed"
+          title="No tienes permisos para crear cursos"
+        >
+          <Shield className="w-4 h-4" />
+          Sin Permisos
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => setShowModal(true)}
+        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+      >
+        <PlusCircle className="w-4 h-4" />
+        Nuevo Curso
+      </button>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
       {/* NOTIFICACIÓN */}
@@ -455,13 +581,13 @@ export default function TeacherDashboard({ onNavigate }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Nuevo Curso
-              </button>
+              <CreateCourseButton />
+              {canViewAcademicReports() && (
+                <button className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-all duration-200 shadow-sm">
+                  <FileText className="w-4 h-4" />
+                  Reportes
+                </button>
+              )}
               <button
                 onClick={() => onNavigate("teacher-profile")}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 transition-all duration-200 shadow-sm"
@@ -484,6 +610,22 @@ export default function TeacherDashboard({ onNavigate }) {
           <p className="text-slate-600 max-w-2xl">
             Gestiona tus cursos, organiza el contenido académico y mantén actualizada tu oferta educativa.
           </p>
+          
+          {!permissionsLoading && userPermissions.length > 0 && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-semibold text-blue-800 mb-2">Tus Permisos:</h3>
+              <div className="flex flex-wrap gap-2">
+                {userPermissions.map((permiso, index) => (
+                  <span 
+                    key={index}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium border border-blue-300"
+                  >
+                    {permiso.replace(/_/g, ' ')}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ESTADÍSTICAS */}
@@ -583,13 +725,15 @@ export default function TeacherDashboard({ onNavigate }) {
                 ? "No hay cursos que coincidan con los filtros aplicados." 
                 : "Comienza creando tu primer curso educativo."}
             </p>
-            <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Crear Primer Curso
-            </button>
+            {canCreateCourse() && (
+              <button
+                onClick={() => setShowModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Crear Primer Curso
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -628,6 +772,8 @@ export default function TeacherDashboard({ onNavigate }) {
                         <button
                           onClick={() => handleDeleteCourse(course.id_curso)}
                           className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                          disabled={!canEditCourse()}
+                          title={!canEditCourse() ? "No tienes permisos para eliminar cursos" : "Eliminar curso"}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -694,7 +840,7 @@ export default function TeacherDashboard({ onNavigate }) {
         )}
       </main>
 
-      {/* MODAL - FORMULARIO COMPLETO (VERSIÓN ORIGINAL RESTAURADA) */}
+      {/* MODAL - FORMULARIO COMPLETO (VERSIÓN ORIGINAL - SIN MODIFICACIONES) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
           <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-8 relative animate-fadeInScale overflow-y-auto max-h-[95vh]">

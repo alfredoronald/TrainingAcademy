@@ -21,6 +21,10 @@ export default function CourseCatalogScreen({ onNavigate }) {
   
   const { canjes, canjesDisponibles, errorCanjes, loadingCanjes, recargarCanjes } = useCanjes(idUsuario);
   
+  // Nuevos estados para permisos
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+
   const [mostrarFactura, setMostrarFactura] = useState(null);
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState('TARJETA');
   const [mostrarSeleccionPago, setMostrarSeleccionPago] = useState(false);
@@ -30,6 +34,67 @@ export default function CourseCatalogScreen({ onNavigate }) {
   const [mostrarSeleccionCanje, setMostrarSeleccionCanje] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Cargar permisos del usuario
+  const loadUserPermissions = async () => {
+    if (!idUsuario) return;
+    
+    try {
+      setPermissionsLoading(true);
+      
+      // Obtener el usuario con sus roles
+      const resUsuario = await fetch(`http://localhost:3000/api/usuarios/${idUsuario}`);
+      if (!resUsuario.ok) throw new Error("Error al cargar usuario");
+      
+      const dataUsuario = await resUsuario.json();
+      
+      // Acceder correctamente a los datos del usuario
+      const usuarioActual = dataUsuario.data || dataUsuario;
+      
+      // Obtener el rol del usuario
+      const rolUsuario = usuarioActual.detalleRoles?.[0]?.rol;
+      
+      if (rolUsuario && rolUsuario.id_rol) {
+        // Cargar permisos del rol usando el endpoint proporcionado
+        const resPermisos = await fetch(`http://localhost:3000/api/roles/${rolUsuario.id_rol}/permisos`);
+        if (!resPermisos.ok) throw new Error("Error al cargar permisos del rol");
+        
+        const dataPermisos = await resPermisos.json();
+        
+        // Acceder correctamente a los permisos
+        const permisosDelRol = dataPermisos.data || dataPermisos;
+        
+        if (Array.isArray(permisosDelRol)) {
+          // Extraer los nombres de los permisos correctamente
+          const nombresPermisos = permisosDelRol.map(p => p.nombre_permiso || p.nombre);
+          setUserPermissions(nombresPermisos);
+        } else {
+          setUserPermissions([]);
+        }
+      } else {
+        setUserPermissions([]);
+      }
+    } catch (err) {
+      console.error("Error cargando permisos del usuario:", err);
+      setUserPermissions([]);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
+
+  // Verificar si el usuario tiene un permiso específico
+  const hasPermission = (permissionName) => {
+    return userPermissions.includes(permissionName);
+  };
+
+  // Verificar permisos específicos para cada acción
+  const canEnrollInCourse = () => {
+    return hasPermission('inscribir_curso');
+  };
+
+  const canViewAcademicReports = () => {
+    return hasPermission('ver_reportes_academicos');
+  };
 
   // 🆕 DEBUG DETALLADO: Verificar estado de inscripciones
   useEffect(() => {
@@ -66,6 +131,13 @@ export default function CourseCatalogScreen({ onNavigate }) {
       setCursosRenderizados(cursosValidos);
     }
   }, [courses, forceUpdate]);
+
+  // Cargar permisos al cargar el componente
+  useEffect(() => {
+    if (idUsuario) {
+      loadUserPermissions();
+    }
+  }, [idUsuario]);
 
   // 🆕 DEBUG: Mostrar información de canjes e inscripciones
   useEffect(() => {
@@ -126,6 +198,12 @@ export default function CourseCatalogScreen({ onNavigate }) {
   const handleSeleccionarPago = (curso) => {
     if (!idUsuario) {
       alert('Debes iniciar sesión para inscribirte');
+      return;
+    }
+
+    // Verificar permisos antes de permitir inscripción
+    if (!canEnrollInCourse()) {
+      alert('No tienes permisos para inscribirte en cursos');
       return;
     }
 
@@ -277,6 +355,14 @@ export default function CourseCatalogScreen({ onNavigate }) {
         <div>Cursos: {cursosRenderizados.length}</div>
         <div>Usuario: {idUsuario}</div>
         <div>ForceUpdate: {forceUpdate}</div>
+        {!permissionsLoading && (
+          <div className="mt-1">
+            <div>Permisos: {userPermissions.length}</div>
+            <div className="text-green-600">
+              Inscribir: {canEnrollInCourse() ? '✅' : '❌'}
+            </div>
+          </div>
+        )}
         {cursoSeleccionado && (
           <div className="mt-1 p-1 bg-blue-100 rounded">
             <div>Curso: {cursoSeleccionado.nombre_curso}</div>
@@ -298,6 +384,7 @@ export default function CourseCatalogScreen({ onNavigate }) {
             onClick={() => {
               console.log('🔍 Inscripciones detalladas:', inscripciones);
               console.log('🔍 Cursos:', cursosRenderizados);
+              console.log('🔍 Permisos:', userPermissions);
               if (cursoSeleccionado) {
                 console.log(`🔍 Curso ${cursoSeleccionado.id_curso} inscrito:`, estaInscrito(cursoSeleccionado.id_curso));
               }
@@ -701,6 +788,27 @@ export default function CourseCatalogScreen({ onNavigate }) {
           <p className="text-lg text-gray-600">
             Descubre los mejores cursos para tu desarrollo profesional
           </p>
+          
+          {/* Mostrar permisos del estudiante */}
+          {!permissionsLoading && userPermissions.length > 0 && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-semibold text-blue-800 mb-2">Tus Permisos:</h3>
+              <div className="flex flex-wrap gap-2">
+                {userPermissions.map((permiso, index) => (
+                  <span 
+                    key={index}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium border border-blue-300"
+                  >
+                    {permiso.replace(/_/g, ' ')}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-2 text-sm text-blue-600">
+                {canEnrollInCourse() && <span className="block">✅ Puedes inscribirte en cursos</span>}
+                {canViewAcademicReports() && <span className="block">✅ Puedes ver reportes académicos</span>}
+              </div>
+            </div>
+          )}
         </div>
 
         {loadingCursos ? (
@@ -718,11 +826,13 @@ export default function CourseCatalogScreen({ onNavigate }) {
               cursosRenderizados.map((course) => {
                 const inscrito = estaInscrito(course.id_curso);
                 const disponible = course.estado_disponibilidad === 'ACTIVO';
+                const tienePermisoInscribir = canEnrollInCourse();
                 
                 console.log(`🎯 Renderizando curso ${course.id_curso}:`, { 
                   nombre: course.nombre_curso, 
                   inscrito, 
-                  disponible 
+                  disponible,
+                  tienePermisoInscribir
                 });
 
                 return (
@@ -768,16 +878,19 @@ export default function CourseCatalogScreen({ onNavigate }) {
                     {/* BOTÓN DE INSCRIPCIÓN CON PAGO */}
                     <button
                       onClick={() => handleSeleccionarPago(course)}
-                      disabled={inscrito || inscribiendo || !disponible}
+                      disabled={inscrito || inscribiendo || !disponible || !tienePermisoInscribir}
                       className={`w-full mt-4 py-3 rounded-lg font-medium ${
                         inscrito 
                           ? 'bg-green-100 text-green-700 cursor-not-allowed'
                           : !disponible
                           ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                          : !tienePermisoInscribir
+                          ? 'bg-red-100 text-red-700 cursor-not-allowed'
                           : inscribiendo
                           ? 'bg-blue-500 text-white cursor-wait'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                       }`}
+                      title={!tienePermisoInscribir ? "No tienes permisos para inscribirte en cursos" : ""}
                     >
                       {inscribiendo ? (
                         'Procesando...'
@@ -785,6 +898,8 @@ export default function CourseCatalogScreen({ onNavigate }) {
                         'Inscrito'
                       ) : !disponible ? (
                         'No disponible'
+                      ) : !tienePermisoInscribir ? (
+                        'Sin permiso para inscribir'
                       ) : (
                         'Inscribirse'
                       )}
