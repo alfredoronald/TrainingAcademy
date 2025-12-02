@@ -20,6 +20,7 @@ import CourseDetail from './components/course-detail.jsx';
 import RewardsScreen from './components/RewardsScreen';
 import ReporteSemanal from "./components/ReporteSemanal";
 import RolesPanel from './components/roles-panel.jsx';
+import EvaluationForm from './components/EvaluationForm.jsx';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -260,6 +261,13 @@ function App() {
         return (
           <RewardsScreen {...commonProps} />
         );
+      case 'teacher-evaluations':
+  return (
+    <EvaluationForm 
+      courseId={navigationParams.courseId} 
+      {...commonProps} 
+    />
+  );
 
       default:
         // Pantalla por defecto si no se reconoce la pantalla actual

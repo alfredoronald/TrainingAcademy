@@ -858,7 +858,7 @@ export default function TeacherDashboard({ onNavigate }) {
                       <span className="text-xs text-slate-600">
                         {courseTypeName}
                       </span>
-                      <button className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors flex items-center gap-1">
+                      <button onClick={() => onNavigate('teacher-evaluations',{ courseId: course.id_curso })} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors flex items-center gap-1">
                         Gestionar <Edit3 className="w-3 h-3" />
                       </button>
                     </div>

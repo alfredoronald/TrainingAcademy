@@ -6,6 +6,7 @@ import { CreateCursoDto } from './curso.dto';
 import { UpdateCursoDto } from './update-curso.dto';
 import { Usuario } from '../usuario/usuario.entity';
 import { TipoCurso } from '../tipo-curso/tipo-curso.entity';
+import { Inscripcion } from '../inscripcion/inscripcion.entity';
 
 @Injectable()
 export class CursoService {
@@ -18,6 +19,8 @@ export class CursoService {
 
   @InjectRepository(TipoCurso)
   private readonly tipoCursoRepo: Repository<TipoCurso>, // 👈 agregado
+  @InjectRepository(Inscripcion)
+    private readonly inscripcionRepository: Repository<Inscripcion>,
 ) {}
 
 
@@ -58,7 +61,14 @@ export class CursoService {
 }
 
 
+  async getEstudiantesPorCurso(id: number) {
+    const inscripciones = await this.inscripcionRepository.find({
+      where: { id_curso: id },
+      relations: ['usuario'], // agrega relaciones según tu modelo
+    });
 
+    return inscripciones.map(i => i.usuario);
+  }
   // Obtener todos los cursos
   async findAll(): Promise<any[]> {
     const cursos = await this.cursoRepo.find({

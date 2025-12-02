@@ -9,15 +9,14 @@ export class CursoController {
 
   // Crear curso
   @Post()
-async create(@Body() createCursoDto: CreateCursoDto) {
-  try {
-    return await this.svc.create(createCursoDto);
-  } catch (error) {
-    console.error('Error creando curso:', error);
-    throw error;
+  async create(@Body() createCursoDto: CreateCursoDto) {
+    try {
+      return await this.svc.create(createCursoDto);
+    } catch (error) {
+      console.error('Error creando curso:', error);
+      throw error;
+    }
   }
-}
-
 
   // Obtener todos los cursos
   @Get()
@@ -30,6 +29,12 @@ async create(@Body() createCursoDto: CreateCursoDto) {
     return cursos;
   }
 
+  // Obtener estudiantes por curso
+  @Get(':id/estudiantes')
+  async getEstudiantesPorCurso(@Param('id') id: string) {
+    return this.svc.getEstudiantesPorCurso(parseInt(id));  // ✔ corregido
+  }
+
   // Obtener curso por ID
   @Get(':id')
   async findOne(@Param('id') id: string) {
@@ -39,12 +44,12 @@ async create(@Body() createCursoDto: CreateCursoDto) {
   // Actualizar curso
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateCursoDto: UpdateCursoDto) {
-    return await this.svc.update(+id, updateCursoDto); // 🔹 método correcto del servicio
+    return await this.svc.update(+id, updateCursoDto);
   }
 
   // Eliminar curso
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    return await this.svc.remove(+id); // 🔹 método correcto del servicio
+    return await this.svc.remove(+id);
   }
 }
