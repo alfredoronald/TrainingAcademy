@@ -11,10 +11,10 @@ export class EvaluacionService {
     return this.repo.save(this.repo.create(data));
   }
 
-  // ✅ findAll con manejo de errores
+  // ✅ findAll con manejo de errores - CORREGIDO
   async findAll(): Promise<Evaluacion[]> {
     try {
-      return await this.repo.find({ relations: ['modulo', 'usuario'] });
+      return await this.repo.find({ relations: ['curso', 'usuario'] }); // ⚠️ 'modulo' → 'curso'
     } catch (err) {
       console.error('Error fetching evaluations:', err);
 
@@ -23,8 +23,12 @@ export class EvaluacionService {
     }
   }
 
+  // ✅ findOne - CORREGIDO
   findOne(id: number) {
-    return this.repo.findOne({ where: { id_evaluacion: id }, relations: ['modulo','usuario'] });
+    return this.repo.findOne({ 
+      where: { id_evaluacion: id }, 
+      relations: ['curso', 'usuario'] // ⚠️ 'modulo' → 'curso'
+    });
   }
 
   update(id: number, data: Partial<Evaluacion>) {
