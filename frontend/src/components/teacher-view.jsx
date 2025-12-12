@@ -31,6 +31,101 @@ export default function TeacherDashboard({ onNavigate }) {
   // Nuevos estados para permisos
   const [userPermissions, setUserPermissions] = useState([]);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [editingCourse, setEditingCourse] = useState(null);
+
+// Abrir modal de edición
+// Abrir modal de edición
+const openEditModal = (course) => {
+  // Verificar permisos antes de abrir el modal de edición
+  if (!canEditCourse()) {
+    showNotification(
+      'error',
+      'Permiso Denegado',
+      'No tienes permisos para editar cursos. Contacta al administrador.'
+    );
+    return;
+  }
+
+  setEditingCourse(course);
+  setForm({
+    nombre_curso: course.nombre_curso,
+    descripcion: course.descripcion,
+    costo: course.costo,
+    duracion: course.duracion,
+    cupos: course.cupos,
+    modalidad: course.modalidad,
+    estado_disponibilidad: course.estado_disponibilidad,
+    id_docente: course.id_docente,
+    id_tipo_curso: course.id_tipo_curso,
+    horarios: [],
+    modulos: []
+  });
+  setShowModal(true);
+};
+
+// Guardar edición
+const handleUpdateCourse = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const body = {
+      nombre_curso: form.nombre_curso,
+      descripcion: form.descripcion,
+      costo: Number(form.costo),
+      duracion: Number(form.duracion),
+      cupos: Number(form.cupos),
+      modalidad: form.modalidad,
+      id_docente: idUsuario,
+      estado_disponibilidad: form.estado_disponibilidad || "ACTIVO",
+      id_tipo_curso: Number(form.id_tipo_curso),
+    };
+
+    console.log('Actualizando curso con datos:', body);
+    console.log('ID del curso:', editingCourse.id_curso);
+    console.log(form.modalidad);
+
+    const res = await fetch(`http://localhost:3000/api/cursos/${editingCourse.id_curso}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+    console.log('Respuesta del servidor:', data);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Error actualizando curso");
+    }
+
+    await loadCourses();
+    setShowModal(false);
+    setEditingCourse(null);
+    setForm({
+      nombre_curso: "",
+      descripcion: "",
+      costo: "",
+      duracion: "",
+      cupos: "",
+      modalidad: "VIRTUAL",
+      id_tipo_curso: "",
+      horarios: [],
+      modulos: [],
+    });
+    
+    showNotification(
+      'success',
+      '¡Curso Actualizado!',
+      'El curso ha sido actualizado exitosamente.'
+    );
+  } catch (err) {
+    console.error('Error completo:', err);
+    showNotification(
+      'error',
+      'Error al Actualizar',
+      err.message || 'Ocurrió un error al actualizar el curso. Intenta nuevamente.'
+    );
+  }
+};
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -796,9 +891,13 @@ export default function TeacherDashboard({ onNavigate }) {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
+                        <button
+  onClick={() => openEditModal(course)}
+  className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
+  title="Editar curso"
+>
+  <Edit3 className="w-4 h-4" />
+</button>
                         <button
                           onClick={() => handleDeleteCourse(course.id_curso)}
                           className="p-2 text-slate-400 hover:text-red-500 transition-colors"
@@ -1154,6 +1253,13 @@ export default function TeacherDashboard({ onNavigate }) {
                 >
                   Crear Curso
                 </button>
+                <button
+  onClick={editingCourse ? handleUpdateCourse : handleCreateCourse}
+  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all"
+>
+  {editingCourse ? "Actualizar Curso" : "Crear Curso"}
+</button>
+
               </div>
             </form>
           </div>

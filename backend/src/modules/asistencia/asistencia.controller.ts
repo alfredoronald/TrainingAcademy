@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Param, Body,ParseIntPipe } from '@nestjs/common';
 import { AsistenciaService } from './asistencia.service';
 
 @Controller('asistencias')
@@ -12,7 +12,7 @@ export class AsistenciaController {
   
   // ✅ NUEVO ENDPOINT PARA CONTAR ASISTENCIAS POR USUARIO
   @Get('usuario/:id/count')
-  async countByUsuario(@Param('id') id: string) {
+  async countByUsuario(@Param('id', ParseIntPipe) id: string) {
     return this.svc.countByUsuario(+id);
   }
 }
