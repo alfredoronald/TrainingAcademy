@@ -1,16 +1,36 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+// src/modules/insignia/insignia.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { UsuarioInsignia } from '../usuario-insignia/usuario-insignia.entity';
 
 @Entity({ name: 'insignia' })
 export class Insignia {
-  @PrimaryGeneratedColumn({ name: 'id_insignia' })
+  @PrimaryGeneratedColumn({ 
+    name: 'id_insignia',
+    type: 'integer'
+  })
   id_insignia: number;
 
-  @Column({ length: 100 })
+  @Column({ 
+    name: 'nombre',
+    length: 100 
+  })
   nombre: string;
 
-  @Column({ type: 'text', nullable: true })
-  descripcion: string;
+  @Column({ 
+    name: 'descripcion',
+    type: 'text', 
+    nullable: true 
+  })
+  descripcion: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  criterio: string;
+  @Column({ 
+    name: 'criterio',
+    type: 'text', 
+    nullable: true 
+  })
+  criterio: string | null;
+
+  // Relación OneToMany con UsuarioInsignia
+  @OneToMany(() => UsuarioInsignia, (usuarioInsignia) => usuarioInsignia.insignia)
+  usuarios: UsuarioInsignia[];
 }

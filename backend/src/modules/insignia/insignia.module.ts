@@ -1,3 +1,4 @@
+// src/modules/insignia/insignia.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Insignia } from './insignia.entity';

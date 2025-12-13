@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { 
   User, Book, Trash2, PlusCircle, GraduationCap, Edit, X, 
   TrendingUp, Users, DollarSign, Gift, CheckCircle, Clock, 
-  Tag, RefreshCw, LogOut
-} from "lucide-react";
+  Tag, RefreshCw, LogOut, Award, Star
+} from "lucide-react";  // Agregué Award y Star
 import { useAuthContext } from "../context/AuthContext";
 
 export default function AdminDashboard({ onNavigate }) {
@@ -16,6 +16,7 @@ export default function AdminDashboard({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);  // Nuevo estado para modal de insignias
   const [form, setForm] = useState({
     nombre_curso: "",
     descripcion: "",
@@ -25,6 +26,16 @@ export default function AdminDashboard({ onNavigate }) {
     modalidad: "VIRTUAL",
     horarios: [],
     modulos: [],
+  });
+
+  // 🆕 NUEVO FORMULARIO PARA INSIGNIAS
+  const [badgeForm, setBadgeForm] = useState({
+    nombre_insignia: "",
+    descripcion: "",
+    imagen_url: "",
+    criterio_obtencion: "",
+    puntos_requeridos: 0,
+    categoria: "LOGROS",
   });
 
   // Función para cerrar sesión
@@ -125,6 +136,81 @@ export default function AdminDashboard({ onNavigate }) {
       console.error("❌ Error al cargar canjes:", err);
     }
   };
+
+ // 🆕 FUNCIÓN FINAL CORREGIDA PARA CREAR INSIGNIAS
+const handleCreateBadge = async (e) => {
+  e.preventDefault();
+  try {
+    // Validación básica
+    if (!badgeForm.nombre_insignia || badgeForm.nombre_insignia.trim() === "") {
+      alert("❌ El nombre de la insignia es requerido");
+      return;
+    }
+
+    // 🔥 ¡CORRECTO! Usa 'nombre' y 'criterio' (como la entidad y DTO)
+    const body = {
+      nombre: badgeForm.nombre_insignia.trim(),        // ← 'nombre' no 'nombre_insignia'
+      descripcion: badgeForm.descripcion?.trim() || null,
+      criterio: badgeForm.criterio_obtencion?.trim() || null,  // ← 'criterio' no 'criterio_obtencion'
+    };
+
+    console.log("📤 Enviando datos de insignia (FINAL):", body);
+
+    const res = await fetch("http://localhost:3000/api/insignias", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const responseText = await res.text();
+    console.log("📥 Respuesta del servidor (cruda):", responseText);
+
+    if (!res.ok) {
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(`Error ${res.status}: ${JSON.stringify(errorData.message)}`);
+      } catch {
+        throw new Error(`Error ${res.status}: ${responseText}`);
+      }
+    }
+
+    const responseData = JSON.parse(responseText);
+    console.log("✅ Insignia creada:", responseData);
+
+    alert(`✅ Insignia "${badgeForm.nombre_insignia}" creada exitosamente con ID: ${responseData.id_insignia}`);
+    
+    // Cerrar modal y resetear formulario
+    setShowBadgeModal(false);
+    setBadgeForm({
+      nombre_insignia: "",
+      descripcion: "",
+      imagen_url: "",
+      criterio_obtencion: "",
+      puntos_requeridos: 0,
+      categoria: "LOGROS",
+    });
+
+  } catch (err) {
+    console.error("❌ Error detallado:", err);
+    
+    // Mensaje de error específico
+    let errorMessage = err.message || "Error desconocido";
+    
+    if (err.message.includes("id_insignia")) {
+      errorMessage = "Error en la base de datos: no se pudo generar el ID automático. Verifica la configuración de la tabla.";
+    } else if (err.message.includes("400")) {
+      errorMessage = "Error en los datos enviados. Verifica los nombres de los campos.";
+    } else if (err.message.includes("500")) {
+      errorMessage = "Error interno del servidor. Verifica los logs del backend.";
+    }
+    
+    alert(`❌ Error creando insignia: ${errorMessage}`);
+  }
+};
+
+  // Resto del código se mantiene igual hasta el header...
 
   // 🆕 FUNCIÓN PARA CALCULAR ESTADÍSTICAS DE CURSOS CON PRECIO FINAL
   const calcularEstadisticasCursos = () => {
@@ -646,9 +732,18 @@ export default function AdminDashboard({ onNavigate }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* 🆕 BOTÓN PARA CREAR INSIGNIAS */}
+            <button
+              onClick={() => setShowBadgeModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium shadow-sm"
+            >
+              <Award className="w-5 h-5" />
+              Crear Insignia
+            </button>
+            
             <button
               onClick={() => onNavigate("admin-permissions")}
-              className=" flex items-center gap-2 px-4 py-2 bg-white font-medium text-indigo-700 rounded-lg shadow hover:bg-indigo-700 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-white font-medium text-indigo-700 rounded-lg shadow hover:bg-indigo-700 hover:text-white transition"
             >
               <User className="w-4 h-4" />
               Gestionar Roles
@@ -1007,13 +1102,147 @@ export default function AdminDashboard({ onNavigate }) {
                 >
                   Crear Curso
                 </button>
-                
-
               </div>
             </form>
           </div>
         </div>
       )}
+
+     {/* 🆕 MODAL PARA CREAR INSIGNIAS (CORREGIDO PARA TU TABLA ACTUAL) */}
+{showBadgeModal && (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
+    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 relative animate-fadeInScale">
+      <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition" onClick={() => setShowBadgeModal(false)}>
+        <X className="w-5 h-5" />
+      </button>
+      
+      <div className="text-center mb-6">
+        <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <Award className="w-8 h-8 text-yellow-600" />
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-900">Crear Nueva Insignia</h2>
+        <p className="text-gray-600 text-sm mt-1">Crea insignias para recompensar a los usuarios</p>
+      </div>
+
+      <form onSubmit={handleCreateBadge} className="space-y-4">
+        {/* NOMBRE DE LA INSIGNIA (REQUERIDO) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nombre de la Insignia <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-200 outline-none" 
+            value={badgeForm.nombre_insignia} 
+            onChange={(e) => setBadgeForm({ ...badgeForm, nombre_insignia: e.target.value })} 
+            placeholder="Ej: Curso Completado, Participación Activa, etc."
+            required 
+          />
+          <p className="text-xs text-gray-500 mt-1">Este campo es obligatorio</p>
+        </div>
+
+        {/* DESCRIPCIÓN (OPCIONAL) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Descripción
+          </label>
+          <textarea 
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-200 outline-none" 
+            value={badgeForm.descripcion} 
+            onChange={(e) => setBadgeForm({ ...badgeForm, descripcion: e.target.value })} 
+            placeholder="Describe qué representa esta insignia (opcional)"
+            rows="3"
+          />
+          <p className="text-xs text-gray-500 mt-1">Opcional. Puedes dejar este campo vacío.</p>
+        </div>
+
+        {/* CRITERIO DE OBTENCIÓN (OPCIONAL) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Criterio de Obtención
+          </label>
+          <input 
+            type="text" 
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-200 outline-none" 
+            value={badgeForm.criterio_obtencion} 
+            onChange={(e) => setBadgeForm({ ...badgeForm, criterio_obtencion: e.target.value })} 
+            placeholder="Ej: Completar 5 cursos, Asistir a 10 clases, etc."
+          />
+          <p className="text-xs text-gray-500 mt-1">Opcional. Describe cómo se gana esta insignia.</p>
+        </div>
+
+        {/* INFORMACIÓN ADICIONAL */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-blue-800">Información</p>
+              <p className="text-xs text-blue-600 mt-1">
+                Actualmente, la insignia solo guarda: <span className="font-semibold">Nombre, Descripción y Criterio</span>. 
+                Otros campos como imagen, puntos o categoría estarán disponibles en una futura actualización.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* PREVISUALIZACIÓN DE LA INSIGNIA */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Vista Previa</h4>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-yellow-200 rounded-full flex items-center justify-center flex-shrink-0">
+              <Award className="w-8 h-8 text-yellow-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 text-sm truncate">
+                {badgeForm.nombre_insignia || "Nombre de la insignia"}
+              </p>
+              <p className="text-gray-600 text-xs mt-1 line-clamp-2">
+                {badgeForm.descripcion || "Descripción de la insignia"}
+              </p>
+              <p className="text-yellow-600 text-xs mt-2">
+                {badgeForm.criterio_obtencion ? `Criterio: ${badgeForm.criterio_obtencion}` : "Criterio: Sin definir"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+               {/* BOTONES */}
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+          <button 
+            type="button" 
+            onClick={() => {
+              setShowBadgeModal(false);
+              // Resetear formulario
+              setBadgeForm({
+                nombre_insignia: "",
+                descripcion: "",
+                imagen_url: "",
+                criterio_obtencion: "",
+                puntos_requeridos: 0,
+                categoria: "LOGROS",
+              });
+            }} 
+            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-medium flex items-center gap-2"
+          >
+            <Award className="w-4 h-4" />
+            Crear Insignia
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function RewardsScreen({ onNavigate }) {
   
   const [categoriaActiva, setCategoriaActiva] = useState('TODAS');
   const [mensajeExito, setMensajeExito] = useState('');
-
+  
   // Función para canjear recompensa
   const handleCanjearRecompensa = async (recompensa) => {
     if (!idUsuario) {
