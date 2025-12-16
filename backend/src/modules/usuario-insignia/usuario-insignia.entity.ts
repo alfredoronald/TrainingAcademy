@@ -1,21 +1,26 @@
 // src/modules/usuario-insignia/usuario-insignia.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Usuario } from '../usuario/usuario.entity';
 import { Insignia } from '../insignia/insignia.entity';
 
 @Entity({ name: 'usuario_insignia' })
 export class UsuarioInsignia {
-  @PrimaryGeneratedColumn({ name: 'id_usuario_insignia' })
-  id_usuario_insignia: number;
-
-  @Column({ name: 'id_usuario', type: 'integer' })
+  // ⚠️ IMPORTANTE: Usa PrimaryColumn, NO PrimaryGeneratedColumn
+  // Porque tu tabla tiene clave primaria compuesta (id_usuario + id_insignia)
+  @PrimaryColumn({ name: 'id_usuario', type: 'integer' })
   id_usuario: number;
 
-  @Column({ name: 'id_insignia', type: 'integer' })
+  @PrimaryColumn({ name: 'id_insignia', type: 'integer' })
   id_insignia: number;
 
-  @Column({ name: 'fecha_obtencion', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  fecha_obtencion: Date;
+  // ⚠️ IMPORTANTE: El nombre real es 'fecha_otorgada', no 'fecha_obtencion'
+  // Y es tipo 'date', no 'timestamp'
+  @Column({ 
+    name: 'fecha_otorgada', 
+    type: 'date', 
+    nullable: true  // Es nullable según tu tabla
+  })
+  fecha_otorgada: Date;
 
   // Relación ManyToOne con Usuario
   @ManyToOne(() => Usuario, (usuario) => usuario.usuarioInsignias)
