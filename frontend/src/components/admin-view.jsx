@@ -3,10 +3,7 @@ import {
   ArrowLeft,
   BookOpen,
   Calendar,
-  TrendingUp,
   MapPin,
-  Users,
-  CheckCircle,
   AlertCircle,
   BarChart3,
   User,
@@ -56,6 +53,7 @@ export default function AdminDashboard({ onNavigate }) {
   const [insignias, setInsignias] = useState([]);
   const [editingInsignia, setEditingInsignia] = useState(null);
   const [loadingInsignias, setLoadingInsignias] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
 
   const [form, setForm] = useState({
     nombre_curso: "",
@@ -619,17 +617,38 @@ export default function AdminDashboard({ onNavigate }) {
         id_tipo_curso: 1,
       };
 
-      const res = await fetch("http://localhost:3000/api/cursos", {
-        method: "POST",
+      let url = "http://localhost:3000/api/cursos";
+      let method = "POST";
+
+      // Si estamos editando, cambiar a PUT
+      if (editingCourse) {
+        url = `http://localhost:3000/api/cursos/${editingCourse.id_curso}`;
+        method = "PUT";
+      }
+
+      const res = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      const newCourse = await res.json();
+      const courseData = await res.json();
 
-      if (res.ok && newCourse.id_curso) {
-        setCourses([...courses, newCourse]);
+      if (res.ok && courseData.id_curso) {
+        if (editingCourse) {
+          // Actualizar curso existente en la lista
+          setCourses(courses.map(c =>
+            c.id_curso === editingCourse.id_curso ? courseData : c
+          ));
+          alert(`✅ Curso "${form.nombre_curso}" actualizado exitosamente!`);
+        } else {
+          // Agregar nuevo curso
+          setCourses([...courses, courseData]);
+          alert(`✅ Curso "${form.nombre_curso}" creado exitosamente!`);
+        }
+
         setShowModal(false);
+        setEditingCourse(null);
         setForm({
           nombre_curso: "",
           descripcion: "",
@@ -640,15 +659,14 @@ export default function AdminDashboard({ onNavigate }) {
           horarios: [],
           modulos: [],
         });
-        alert("✅ Curso creado exitosamente!");
       } else {
         alert(
-          "❌ Error creando curso: " +
-            (newCourse.message || "Error desconocido")
+          `❌ Error ${editingCourse ? 'actualizando' : 'creando'} curso: ` +
+          (courseData.message || "Error desconocido")
         );
       }
     } catch (err) {
-      alert("❌ Error creando curso");
+      alert(`❌ Error ${editingCourse ? 'actualizando' : 'creando'} curso`);
       console.error(err);
     }
   };
@@ -678,6 +696,23 @@ export default function AdminDashboard({ onNavigate }) {
       alert("❌ Error eliminando curso: " + err.message);
       console.error(err);
     }
+  };
+
+  const handleEditCourse = (course) => {
+    setEditingCourse(course);
+    setShowModal(true);
+
+    // Prellenar el formulario con los datos del curso
+    setForm({
+      nombre_curso: course.nombre_curso || "",
+      descripcion: course.descripcion || "",
+      costo: course.costo || "",
+      duracion: course.duracion || "",
+      cupos: course.cupos || "",
+      modalidad: course.modalidad || "VIRTUAL",
+      horarios: [], // Podrías cargar los horarios existentes si los tienes
+      modulos: [], // Podrías cargar los módulos existentes si los tienes
+    });
   };
 
   const handleDeleteInsignia = async (id, nombre) => {
@@ -3206,6 +3241,13 @@ export default function AdminDashboard({ onNavigate }) {
 
                     <div className="flex gap-2">
                       <button
+                        onClick={() => handleEditCourse(course)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Editar
+                      </button>
+                      <button
                         onClick={() =>
                           handleDeleteCourse(
                             course.id_curso,
@@ -3231,12 +3273,25 @@ export default function AdminDashboard({ onNavigate }) {
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-8 relative animate-fadeInScale overflow-y-auto max-h-[90vh]">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
-              onClick={() => setShowModal(false)}
+              onClick={() => {
+                setShowModal(false);
+                setEditingCourse(null);
+                setForm({
+                  nombre_curso: "",
+                  descripcion: "",
+                  costo: "",
+                  duracion: "",
+                  cupos: "",
+                  modalidad: "VIRTUAL",
+                  horarios: [],
+                  modulos: [],
+                });
+              }}
             >
               <X className="w-5 h-5" />
             </button>
             <h2 className="text-2xl font-semibold text-blue-700 mb-5 text-center">
-              Crear Nuevo Curso
+              {editingCourse ? "Editar Curso" : "Crear Nuevo Curso"}
             </h2>
             <form onSubmit={handleCreateCourse} className="space-y-4">
               <div>
@@ -3427,7 +3482,20 @@ export default function AdminDashboard({ onNavigate }) {
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingCourse(null);
+                    setForm({
+                      nombre_curso: "",
+                      descripcion: "",
+                      costo: "",
+                      duracion: "",
+                      cupos: "",
+                      modalidad: "VIRTUAL",
+                      horarios: [],
+                      modulos: [],
+                    });
+                  }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
                 >
                   Cancelar
@@ -3436,7 +3504,7 @@ export default function AdminDashboard({ onNavigate }) {
                   type="submit"
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                 >
-                  Crear Curso
+                  {editingCourse ? "Actualizar Curso" : "Crear Curso"}
                 </button>
               </div>
             </form>
