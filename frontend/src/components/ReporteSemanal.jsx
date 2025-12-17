@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import './ReporteSemanal.css';
 
-const ReporteSemanal = () => {
+const ReporteSemanal = ({ onNavigate }) => {
   const { user } = useAuthContext();
   const [reporteData, setReporteData] = useState(null);
   const [reporteGeneral, setReporteGeneral] = useState(null);
   const [reporteNuevosEstudiantes, setReporteNuevosEstudiantes] = useState(null);
   const [reporteActividadNuevos, setReporteActividadNuevos] = useState(null);
-  const [actividadIndividual, setActividadIndividual] = useState(null); // NUEVO: Actividad de un estudiante específico
-  const [estudianteSeleccionado, setEstudianteSeleccionado] = useState(null); // NUEVO: Estudiante seleccionado
+  const [actividadIndividual, setActividadIndividual] = useState(null);
+  const [estudianteSeleccionado, setEstudianteSeleccionado] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState('ultimo_mes');
@@ -24,22 +24,64 @@ const ReporteSemanal = () => {
   const [fechaInicioEditada, setFechaInicioEditada] = useState('');
   const [fechaFinEditada, setFechaFinEditada] = useState('');
   const [cargandoReportesNuevos, setCargandoReportesNuevos] = useState(false);
-  const [cargandoActividadIndividual, setCargandoActividadIndividual] = useState(false); // NUEVO
+  const [cargandoActividadIndividual, setCargandoActividadIndividual] = useState(false);
 
   useEffect(() => {
     cargarReportes();
   }, []);
 
+  // FUNCIÓN MEJORADA: Usa onNavigate si existe, de lo contrario intenta otras opciones
+  const handleGoBack = () => {
+    // Opción 1: Si existe onNavigate (como en AdminDashboard)
+    if (onNavigate) {
+      console.log('Usando onNavigate para volver a admin-dashboard');
+      onNavigate('admin-dashboard');
+      return;
+    }
+    
+    // Opción 2: Intentar volver a la página anterior
+    if (window.history.length > 1) {
+      console.log('Usando history.back()');
+      window.history.back();
+      return;
+    }
+    
+    // Opción 3: Redirigir a admin usando diferentes rutas posibles
+    console.log('Redirigiendo directamente a /admin');
+    
+    // Prueba diferentes formatos de ruta
+    const baseUrl = window.location.origin;
+    const possiblePaths = [
+      '/admin',
+      '/#/admin',
+      '/admin-dashboard',
+      '/#/admin-dashboard'
+    ];
+    
+    for (const path of possiblePaths) {
+      try {
+        const fullUrl = baseUrl + path;
+        console.log('Intentando:', fullUrl);
+        window.location.href = fullUrl;
+        return;
+      } catch (error) {
+        console.log('Ruta no funcionó:', error);
+      }
+    }
+    
+    // Opción 4: Último recurso - recargar la página principal
+    console.log('Recargando página principal');
+    window.location.href = baseUrl;
+  };
+
   const cargarReportes = async () => {
     try {
       setLoading(true);
       
-      // Reporte semanal del usuario
       const responseSemanal = await fetch(`http://localhost:3000/api/reportes/semanal/${user.id_usuario}`);
       const dataSemanal = await responseSemanal.json();
       setReporteData(dataSemanal);
 
-      // Reporte general del sistema
       const responseGeneral = await fetch('http://localhost:3000/api/reportes/general');
       const dataGeneral = await responseGeneral.json();
       setReporteGeneral(dataGeneral);
@@ -66,7 +108,6 @@ const ReporteSemanal = () => {
       const data = await response.json();
       setReporteNuevosEstudiantes(data);
       
-      // Si hay estudiantes nuevos, cargar su actividad
       if (data.nuevosEstudiantes && data.nuevosEstudiantes.length > 0) {
         await cargarActividadNuevosEstudiantes(data.nuevosEstudiantes.map(e => e.id_usuario));
       } else {
@@ -87,94 +128,87 @@ const ReporteSemanal = () => {
   };
 
   const cargarActividadNuevosEstudiantes = async (idsUsuarios) => {
-  try {
-    console.log('🔍 [DEBUG] IDs enviados al backend:', idsUsuarios);
-    
-    if (!idsUsuarios || idsUsuarios.length === 0) {
-      console.warn('⚠️  No hay IDs para enviar');
+    try {
+      console.log('🔍 [DEBUG] IDs enviados al backend:', idsUsuarios);
+      
+      if (!idsUsuarios || idsUsuarios.length === 0) {
+        console.warn('⚠️  No hay IDs para enviar');
+        setReporteActividadNuevos({ actividad: [] });
+        return;
+      }
+
+      const idsString = idsUsuarios.join(',');
+      console.log('📤 [DEBUG] IDs como string:', idsString);
+      
+      const response = await fetch(
+        `http://localhost:3000/api/reportes/actividad-nuevos?ids=${idsString}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      
+      console.log('📤 [DEBUG] Estado de respuesta:', response.status);
+      console.log('📤 [DEBUG] URL completa:', response.url);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [DEBUG] Error en respuesta:', errorText);
+        throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ [DEBUG] Datos recibidos:', data);
+      console.log('✅ [DEBUG] Cantidad de actividades:', data.actividad?.length || 0);
+      
+      setReporteActividadNuevos(data);
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error completo:', error);
       setReporteActividadNuevos({ actividad: [] });
-      return;
     }
+  };
 
-    // CONVERTIR ARRAY A STRING PARA GET
-    const idsString = idsUsuarios.join(',');
-    console.log('📤 [DEBUG] IDs como string:', idsString);
-    
-    // USAR ENDPOINT GET EN LUGAR DE POST
-    const response = await fetch(
-      `http://localhost:3000/api/reportes/actividad-nuevos?ids=${idsString}`,
-      {
-        method: 'GET',  // Cambiado de POST a GET
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }
-    );
-    
-    console.log('📤 [DEBUG] Estado de respuesta:', response.status);
-    console.log('📤 [DEBUG] URL completa:', response.url);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [DEBUG] Error en respuesta:', errorText);
-      throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log('✅ [DEBUG] Datos recibidos:', data);
-    console.log('✅ [DEBUG] Cantidad de actividades:', data.actividad?.length || 0);
-    
-    setReporteActividadNuevos(data);
-    
-  } catch (error) {
-    console.error('❌ [DEBUG] Error completo:', error);
-    setReporteActividadNuevos({ actividad: [] });
-  }
-};
-
-  // NUEVA FUNCIÓN: Cargar actividad de un solo estudiante
   const cargarActividadIndividual = async (idUsuario, estudiante) => {
-  try {
-    setCargandoActividadIndividual(true);
-    setEstudianteSeleccionado(estudiante);
-    
-    // USAR ENDPOINT GET
-    const response = await fetch(
-      `http://localhost:3000/api/reportes/actividad-nuevos?ids=${idUsuario}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+    try {
+      setCargandoActividadIndividual(true);
+      setEstudianteSeleccionado(estudiante);
+      
+      const response = await fetch(
+        `http://localhost:3000/api/reportes/actividad-nuevos?ids=${idUsuario}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
         }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
       }
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Error HTTP: ${response.status}`);
+      
+      const data = await response.json();
+      
+      setActividadIndividual({
+        ...data.actividad?.[0] || {},
+        estudianteInfo: estudiante
+      });
+      
+      setActiveTab('actividad-detalle');
+      
+    } catch (error) {
+      console.error('Error cargando actividad individual:', error);
+      setActividadIndividual(null);
+    } finally {
+      setCargandoActividadIndividual(false);
     }
-    
-    const data = await response.json();
-    
-    setActividadIndividual({
-      ...data.actividad?.[0] || {},
-      estudianteInfo: estudiante
-    });
-    
-    // Cambiamos a la pestaña de actividad
-    setActiveTab('actividad-detalle');
-    
-  } catch (error) {
-    console.error('Error cargando actividad individual:', error);
-    setActividadIndividual(null);
-  } finally {
-    setCargandoActividadIndividual(false);
-  }
-};
+  };
 
-  // NUEVA FUNCIÓN: Cargar información detallada del estudiante
   const cargarInfoDetalladaEstudiante = async (idUsuario) => {
     try {
-      // Podemos agregar más consultas aquí para información adicional
       const [cursosResponse, puntosResponse, recompensasResponse] = await Promise.all([
         fetch(`http://localhost:3000/api/inscripciones/usuario/${idUsuario}`),
         fetch(`http://localhost:3000/api/puntos/usuario/${idUsuario}`),
@@ -196,7 +230,7 @@ const ReporteSemanal = () => {
   const handlePeriodoChange = (periodo) => {
     setPeriodoSeleccionado(periodo);
     
- setMostrarEditoresFecha(periodo === 'personalizado');
+    setMostrarEditoresFecha(periodo === 'personalizado');
 
     const hoy = new Date();
     const nuevaFechaInicio = new Date();
@@ -215,10 +249,9 @@ const ReporteSemanal = () => {
         nuevaFechaInicio.setDate(hoy.getDate() - 365);
         break;
       case 'personalizado':
-        // MODIFICAR: Agregar estas 3 líneas para modo personalizado
         setFechaInicioEditada(fechaInicio);
         setFechaFinEditada(fechaFin);
-        return; // No cargar automáticamente
+        return;
       default:
         nuevaFechaInicio.setDate(hoy.getDate() - 30);
     }
@@ -226,7 +259,6 @@ const ReporteSemanal = () => {
     setFechaInicio(nuevaFechaInicio.toISOString().split('T')[0]);
     setFechaFin(hoy.toISOString().split('T')[0]);
     
-    // Cargar datos automáticamente
     if (activeTab === 'nuevos' || activeTab === 'actividad') {
       cargarNuevosEstudiantes();
     }
@@ -243,17 +275,13 @@ const ReporteSemanal = () => {
       return;
     }
     
-    // Aplicar las fechas editadas
     setFechaInicio(fechaInicioEditada);
     setFechaFin(fechaFinEditada);
     
-    // Cargar datos con las nuevas fechas
     cargarNuevosEstudiantes();
     
-    // Ocultar editores
     setMostrarEditoresFecha(false);
   };
-
 
   useEffect(() => {
     if (activeTab === 'nuevos' || activeTab === 'actividad') {
@@ -286,54 +314,53 @@ const ReporteSemanal = () => {
   };
 
   const calcularEstadisticasActividad = () => {
-  if (!reporteActividadNuevos?.actividad || reporteActividadNuevos.actividad.length === 0) {
+    if (!reporteActividadNuevos?.actividad || reporteActividadNuevos.actividad.length === 0) {
+      return {
+        totalEstudiantes: 0,
+        totalCursos: 0,
+        totalPuntos: 0,
+        totalRecompensas: 0,
+        promedioCursos: '0.0',
+        promedioPuntos: '0.0',
+        estudiantesActivos: 0,
+        tasaActividad: '0.0'
+      };
+    }
+    
+    const actividad = reporteActividadNuevos.actividad;
+    const totalEstudiantes = actividad.length;
+    
+    const totalCursos = actividad.reduce((sum, a) => {
+      const cursos = parseInt(a.cursos_inscritos) || 0;
+      return sum + cursos;
+    }, 0);
+    
+    const totalPuntos = actividad.reduce((sum, a) => {
+      const puntos = parseFloat(a.puntos_obtenidos) || 0;
+      return sum + puntos;
+    }, 0);
+    
+    const totalRecompensas = actividad.reduce((sum, a) => {
+      const recompensas = parseInt(a.recompensas_canjeadas) || 0;
+      return sum + recompensas;
+    }, 0);
+    
+    const estudiantesActivos = actividad.filter(a => {
+      const cursos = parseInt(a.cursos_inscritos) || 0;
+      return cursos > 0;
+    }).length;
+    
     return {
-      totalEstudiantes: 0,
-      totalCursos: 0,
-      totalPuntos: 0,
-      totalRecompensas: 0,
-      promedioCursos: '0.0',
-      promedioPuntos: '0.0',
-      estudiantesActivos: 0,
-      tasaActividad: '0.0'
+      totalEstudiantes,
+      totalCursos,
+      totalPuntos,
+      totalRecompensas,
+      promedioCursos: (totalCursos / totalEstudiantes || 0).toFixed(1),
+      promedioPuntos: (totalPuntos / totalEstudiantes || 0).toFixed(1),
+      estudiantesActivos,
+      tasaActividad: totalEstudiantes > 0 ? ((estudiantesActivos / totalEstudiantes) * 100).toFixed(1) : '0.0'
     };
-  }
-  
-  const actividad = reporteActividadNuevos.actividad;
-  const totalEstudiantes = actividad.length;
-  
-  // CONVERTIR STRINGS A NÚMEROS ANTES DE SUMAR
-  const totalCursos = actividad.reduce((sum, a) => {
-    const cursos = parseInt(a.cursos_inscritos) || 0;
-    return sum + cursos;
-  }, 0);
-  
-  const totalPuntos = actividad.reduce((sum, a) => {
-    const puntos = parseFloat(a.puntos_obtenidos) || 0;
-    return sum + puntos;
-  }, 0);
-  
-  const totalRecompensas = actividad.reduce((sum, a) => {
-    const recompensas = parseInt(a.recompensas_canjeadas) || 0;
-    return sum + recompensas;
-  }, 0);
-  
-  const estudiantesActivos = actividad.filter(a => {
-    const cursos = parseInt(a.cursos_inscritos) || 0;
-    return cursos > 0;
-  }).length;
-  
-  return {
-    totalEstudiantes,
-    totalCursos,
-    totalPuntos,
-    totalRecompensas,
-    promedioCursos: (totalCursos / totalEstudiantes || 0).toFixed(1),
-    promedioPuntos: (totalPuntos / totalEstudiantes || 0).toFixed(1),
-    estudiantesActivos,
-    tasaActividad: totalEstudiantes > 0 ? ((estudiantesActivos / totalEstudiantes) * 100).toFixed(1) : '0.0'
   };
-};
 
   if (loading) {
     return (
@@ -350,16 +377,19 @@ const ReporteSemanal = () => {
 
   return (
     <div className="reporte-container">
-      {/* Header */}
       <div className="reporte-header">
+        <div className="header-top-row">
+          <button onClick={handleGoBack} className="btn-back">
+            ← Volver a Panel de Admin
+          </button>
+          <button onClick={cargarReportes} className="btn-refresh">
+            🔄 Actualizar Reportes
+          </button>
+        </div>
         <h1>📊 Reporte de Progreso</h1>
         <p>Estadísticas de tu aprendizaje y del sistema</p>
-        <button onClick={cargarReportes} className="btn-refresh">
-          🔄 Actualizar Reportes
-        </button>
       </div>
 
-      {/* Tabs de Navegación */}
       <div className="tabs-navigation">
         <button 
           className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`}
@@ -391,7 +421,6 @@ const ReporteSemanal = () => {
         >
           📋 Actividad General
         </button>
-        {/* NUEVO TAB para actividad individual */}
         {actividadIndividual && (
           <button 
             className={`tab-btn ${activeTab === 'actividad-detalle' ? 'active' : ''}`}
@@ -402,9 +431,7 @@ const ReporteSemanal = () => {
         )}
       </div>
 
-      {/* Contenido de Tabs */}
       <div className="tab-content">
-        {/* TAB 1: PROGRESO PERSONAL */}
         {activeTab === 'personal' && reporteData && (
           <div className="seccion-reporte">
             <h2>🎯 Tu Progreso Académico</h2>
@@ -460,12 +487,10 @@ const ReporteSemanal = () => {
           </div>
         )}
 
-        {/* TAB 2: ESTADÍSTICAS DEL SISTEMA */}
         {activeTab === 'sistema' && reporteGeneral && (
           <div className="seccion-reporte">
             <h2>🏆 Estadísticas Generales del Sistema</h2>
             
-            {/* Cursos Más Demandados */}
             <div className="reporte-grupo">
               <h3>🎓 Cursos Más Populares</h3>
               <div className="lista-items">
@@ -482,7 +507,6 @@ const ReporteSemanal = () => {
               </div>
             </div>
 
-            {/* Mejor Desempeño */}
             <div className="reporte-grupo">
               <h3>🏅 Top Estudiantes - Mejor Promedio</h3>
               <div className="lista-items">
@@ -501,7 +525,6 @@ const ReporteSemanal = () => {
               </div>
             </div>
 
-            {/* Recompensas Más Usadas */}
             <div className="reporte-grupo">
               <h3>🎁 Recompensas Más Canjeadas</h3>
               <div className="lista-items">
@@ -520,7 +543,6 @@ const ReporteSemanal = () => {
           </div>
         )}
 
-        {/* TAB 3: ASISTENCIA */}
         {activeTab === 'asistencia' && reporteGeneral && (
           <div className="seccion-reporte">
             <h2>👥 Estadísticas de Asistencia</h2>
@@ -557,139 +579,134 @@ const ReporteSemanal = () => {
           </div>
         )}
 
-        {/* TAB 4: NUEVOS ESTUDIANTES REGISTRADOS */}
-{activeTab === 'nuevos' && (
-  <div className="seccion-reporte">
-    <h2>🆕 Nuevos Estudiantes Registrados</h2>
-    
-    {/* Filtro de Periodo */}
-    <div className="filtro-periodo">
-      <h3>📅 Seleccionar Período</h3>
-      <div className="filtro-periodo-opciones">
-        <button 
-          className={`periodo-btn ${periodoSeleccionado === 'ultima_semana' ? 'active' : ''}`}
-          onClick={() => handlePeriodoChange('ultima_semana')}
-        >
-          Última Semana
-        </button>
-        <button 
-          className={`periodo-btn ${periodoSeleccionado === 'ultimo_mes' ? 'active' : ''}`}
-          onClick={() => handlePeriodoChange('ultimo_mes')}
-        >
-          Último Mes
-        </button>
-        <button 
-          className={`periodo-btn ${periodoSeleccionado === 'ultimos_3_meses' ? 'active' : ''}`}
-          onClick={() => handlePeriodoChange('ultimos_3_meses')}
-        >
-          Últimos 3 Meses
-        </button>
-        <button 
-          className={`periodo-btn ${periodoSeleccionado === 'ultimo_anio' ? 'active' : ''}`}
-          onClick={() => handlePeriodoChange('ultimo_anio')}
-        >
-          Último Año
-        </button>
-        <button 
-          className={`periodo-btn ${periodoSeleccionado === 'personalizado' ? 'active' : ''}`}
-          onClick={() => handlePeriodoChange('personalizado')}
-        >
-          Personalizado
-        </button>
-      </div>
-      
-      {/* Selector de fechas personalizadas */}
-      {mostrarEditoresFecha && (
-        <div className="selector-fechas-personalizado">
-          <div className="fecha-input-group">
-            <label htmlFor="fechaInicioPersonalizada">Desde:</label>
-            <input
-              type="date"
-              id="fechaInicioPersonalizada"
-              value={fechaInicioEditada}
-              onChange={(e) => setFechaInicioEditada(e.target.value)}
-              max={fechaFinEditada}
-            />
-          </div>
-          <div className="fecha-input-group">
-            <label htmlFor="fechaFinPersonalizada">Hasta:</label>
-            <input
-              type="date"
-              id="fechaFinPersonalizada"
-              value={fechaFinEditada}
-              onChange={(e) => setFechaFinEditada(e.target.value)}
-              min={fechaInicioEditada}
-              max={new Date().toISOString().split('T')[0]}
-            />
-          </div>
-          <div className="fecha-botones-accion">
-            <button 
-              onClick={aplicarFechasPersonalizadas}
-              className="btn-aplicar-fechas"
-            >
-              Aplicar Fechas
-            </button>
-            <button 
-              onClick={() => setMostrarEditoresFecha(false)}
-              className="btn-cancelar-fechas"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-      
-      <div className="fechas-seleccionadas">
-        <div className="fecha-info">
-          <p>
-            <strong>Período actual:</strong> {formatearFecha(fechaInicio)} - {formatearFecha(fechaFin)}
-          </p>
-          <button 
-            className="btn-editar-fechas"
-            onClick={() => {
-              setFechaInicioEditada(fechaInicio);
-              setFechaFinEditada(fechaFin);
-              setMostrarEditoresFecha(true);
-              setPeriodoSeleccionado('personalizado');
-            }}
-          >
-            ✏️ Editar Fechas
-          </button>
-        </div>
-        
-        <button 
-          onClick={cargarNuevosEstudiantes} 
-          className="btn-cargar-datos"
-          disabled={cargandoReportesNuevos}
-        >
-          {cargandoReportesNuevos ? 'Cargando...' : '🔍 Buscar en este Período'}
-        </button>
-      </div>
-    </div>
+        {activeTab === 'nuevos' && (
+          <div className="seccion-reporte">
+            <h2>🆕 Nuevos Estudiantes Registrados</h2>
+            
+            <div className="filtro-periodo">
+              <h3>📅 Seleccionar Período</h3>
+              <div className="filtro-periodo-opciones">
+                <button 
+                  className={`periodo-btn ${periodoSeleccionado === 'ultima_semana' ? 'active' : ''}`}
+                  onClick={() => handlePeriodoChange('ultima_semana')}
+                >
+                  Última Semana
+                </button>
+                <button 
+                  className={`periodo-btn ${periodoSeleccionado === 'ultimo_mes' ? 'active' : ''}`}
+                  onClick={() => handlePeriodoChange('ultimo_mes')}
+                >
+                  Último Mes
+                </button>
+                <button 
+                  className={`periodo-btn ${periodoSeleccionado === 'ultimos_3_meses' ? 'active' : ''}`}
+                  onClick={() => handlePeriodoChange('ultimos_3_meses')}
+                >
+                  Últimos 3 Meses
+                </button>
+                <button 
+                  className={`periodo-btn ${periodoSeleccionado === 'ultimo_anio' ? 'active' : ''}`}
+                  onClick={() => handlePeriodoChange('ultimo_anio')}
+                >
+                  Último Año
+                </button>
+                <button 
+                  className={`periodo-btn ${periodoSeleccionado === 'personalizado' ? 'active' : ''}`}
+                  onClick={() => handlePeriodoChange('personalizado')}
+                >
+                  Personalizado
+                </button>
+              </div>
+              
+              {mostrarEditoresFecha && (
+                <div className="selector-fechas-personalizado">
+                  <div className="fecha-input-group">
+                    <label htmlFor="fechaInicioPersonalizada">Desde:</label>
+                    <input
+                      type="date"
+                      id="fechaInicioPersonalizada"
+                      value={fechaInicioEditada}
+                      onChange={(e) => setFechaInicioEditada(e.target.value)}
+                      max={fechaFinEditada}
+                    />
+                  </div>
+                  <div className="fecha-input-group">
+                    <label htmlFor="fechaFinPersonalizada">Hasta:</label>
+                    <input
+                      type="date"
+                      id="fechaFinPersonalizada"
+                      value={fechaFinEditada}
+                      onChange={(e) => setFechaFinEditada(e.target.value)}
+                      min={fechaInicioEditada}
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div className="fecha-botones-accion">
+                    <button 
+                      onClick={aplicarFechasPersonalizadas}
+                      className="btn-aplicar-fechas"
+                    >
+                      Aplicar Fechas
+                    </button>
+                    <button 
+                      onClick={() => setMostrarEditoresFecha(false)}
+                      className="btn-cancelar-fechas"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="fechas-seleccionadas">
+                <div className="fecha-info">
+                  <p>
+                    <strong>Período actual:</strong> {formatearFecha(fechaInicio)} - {formatearFecha(fechaFin)}
+                  </p>
+                  <button 
+                    className="btn-editar-fechas"
+                    onClick={() => {
+                      setFechaInicioEditada(fechaInicio);
+                      setFechaFinEditada(fechaFin);
+                      setMostrarEditoresFecha(true);
+                      setPeriodoSeleccionado('personalizado');
+                    }}
+                  >
+                    ✏️ Editar Fechas
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={cargarNuevosEstudiantes} 
+                  className="btn-cargar-datos"
+                  disabled={cargandoReportesNuevos}
+                >
+                  {cargandoReportesNuevos ? 'Cargando...' : '🔍 Buscar en este Período'}
+                </button>
+              </div>
+            </div>
 
-    {cargandoReportesNuevos ? (
-      <div className="loading-interno">
-        <div className="spinner pequeño"></div>
-        <p>Cargando datos de nuevos estudiantes...</p>
-      </div>
-    ) : reporteNuevosEstudiantes ? (
-      <>
-        {/* Estadísticas */}
-        <div className="stats-grid-nuevos">
-          <div className="stat-card nuevo">
-            <div className="stat-icon">👥</div>
-            <div className="stat-value">{reporteNuevosEstudiantes.total || 0}</div>
-            <div className="stat-label">Total Nuevos Estudiantes</div>
-          </div>
-          
-          <div className="stat-card nuevo">
-            <div className="stat-icon">📈</div>
-            <div className="stat-value">{reporteNuevosEstudiantes.variacion || '0%'}</div>
-            <div className="stat-label">Variación vs Período Anterior</div>
-          </div>
-        </div>
+            {cargandoReportesNuevos ? (
+              <div className="loading-interno">
+                <div className="spinner pequeño"></div>
+                <p>Cargando datos de nuevos estudiantes...</p>
+              </div>
+            ) : reporteNuevosEstudiantes ? (
+              <>
+                <div className="stats-grid-nuevos">
+                  <div className="stat-card nuevo">
+                    <div className="stat-icon">👥</div>
+                    <div className="stat-value">{reporteNuevosEstudiantes.total || 0}</div>
+                    <div className="stat-label">Total Nuevos Estudiantes</div>
+                  </div>
+                  
+                  <div className="stat-card nuevo">
+                    <div className="stat-icon">📈</div>
+                    <div className="stat-value">{reporteNuevosEstudiantes.variacion || '0%'}</div>
+                    <div className="stat-label">Variación vs Período Anterior</div>
+                  </div>
+                </div>
 
-                {/* Lista de Estudiantes - CON BOTÓN DE CLICK */}
                 <div className="reporte-grupo">
                   <h3>📋 Lista de Nuevos Estudiantes ({reporteNuevosEstudiantes.nuevosEstudiantes?.length || 0})</h3>
                   <p className="instruccion-click">
@@ -742,7 +759,6 @@ const ReporteSemanal = () => {
           </div>
         )}
 
-        {/* TAB 5: ACTIVIDAD GENERAL DE USUARIOS NUEVOS */}
         {activeTab === 'actividad' && (
           <div className="seccion-reporte">
             <h2>📋 Actividad de Usuarios Nuevos</h2>
@@ -750,7 +766,6 @@ const ReporteSemanal = () => {
               Estadísticas de actividad de estudiantes registrados en el período seleccionado
             </p>
 
-            {/* Información del Período */}
             <div className="info-periodo-actividad">
               <span className="info-periodo-label">Período seleccionado:</span>
               <span className="info-periodo-valor">
@@ -771,7 +786,6 @@ const ReporteSemanal = () => {
               </div>
             ) : reporteActividadNuevos ? (
               <>
-                {/* Estadísticas de Actividad */}
                 <div className="stats-grid-actividad">
                   <div className="stat-card actividad">
                     <div className="stat-icon">👥</div>
@@ -803,7 +817,6 @@ const ReporteSemanal = () => {
                   </div>
                 </div>
 
-                {/* Tasa de Participación */}
                 <div className="tasa-participacion">
                   <h3>📈 Tasa de Participación: {statsActividad.tasaActividad}%</h3>
                   <div className="barra-participacion">
@@ -818,7 +831,6 @@ const ReporteSemanal = () => {
                   </div>
                 </div>
 
-                {/* Lista Detallada */}
                 <div className="reporte-grupo">
                   <h3>📊 Actividad Detallada por Estudiante</h3>
                   <div className="tabla-actividad-container">
@@ -901,7 +913,6 @@ const ReporteSemanal = () => {
           </div>
         )}
 
-        {/* NUEVO TAB 6: ACTIVIDAD INDIVIDUAL DETALLADA */}
         {activeTab === 'actividad-detalle' && (
           <div className="seccion-reporte">
             <div className="detalle-estudiante-header">
@@ -936,7 +947,6 @@ const ReporteSemanal = () => {
               </div>
             ) : actividadIndividual ? (
               <>
-                {/* Resumen de Actividad */}
                 <div className="stats-grid-detalle">
                   <div className="stat-card detalle">
                     <div className="stat-icon">📚</div>
@@ -968,7 +978,6 @@ const ReporteSemanal = () => {
                   </div>
                 </div>
 
-                {/* Estado General */}
                 <div className="estado-general">
                   <h3>Estado de Participación</h3>
                   <div className={`badge-estado ${(actividadIndividual.cursos_inscritos || 0) > 0 ? 'activo' : 'inactivo'}`}>
@@ -982,7 +991,6 @@ const ReporteSemanal = () => {
                   </p>
                 </div>
 
-                {/* Información adicional si la tenemos */}
                 {actividadIndividual.detalles && (
                   <div className="info-adicional">
                     <h3>Información Adicional</h3>
@@ -1030,7 +1038,6 @@ const ReporteSemanal = () => {
         )}
       </div>
 
-      {/* Footer */}
       <div className="reporte-footer">
         <p>Reporte generado el {new Date().toLocaleDateString('es-ES', { 
           year: 'numeric', 

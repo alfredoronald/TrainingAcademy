@@ -1344,3 +1344,52 @@
   background-color: #6c757d;
   cursor: not-allowed;
 }
+
+/* Estilos para el botón de atrás y header modificado */
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.btn-back {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-back:hover {
+  background: #e0e0e0;
+  border-color: #ccc;
+}
+
+.btn-back:active {
+  transform: translateY(1px);
+}
+
+/* Ajuste para mantener la responsividad */
+.reporte-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.reporte-header h1 {
+  margin: 10px 0 5px 0;
+}
+
+.reporte-header p {
+  margin: 0 0 15px 0;
+}
