@@ -26,30 +26,30 @@ const ReporteSemanal = ({ onNavigate }) => {
   const [cargandoReportesNuevos, setCargandoReportesNuevos] = useState(false);
   const [cargandoActividadIndividual, setCargandoActividadIndividual] = useState(false);
 
+  // NUEVOS ESTADOS PARA DETALLES
+  const [detallesCursos, setDetallesCursos] = useState([]);
+  const [detallesCanjes, setDetallesCanjes] = useState([]);
+  const [mostrarDetallesCursos, setMostrarDetallesCursos] = useState(false);
+  const [mostrarDetallesCanjes, setMostrarDetallesCanjes] = useState(false);
+  const [cargandoDetalles, setCargandoDetalles] = useState(false);
+
   useEffect(() => {
     cargarReportes();
   }, []);
 
-  // FUNCIÓN MEJORADA: Usa onNavigate si existe, de lo contrario intenta otras opciones
   const handleGoBack = () => {
-    // Opción 1: Si existe onNavigate (como en AdminDashboard)
     if (onNavigate) {
       console.log('Usando onNavigate para volver a admin-dashboard');
       onNavigate('admin-dashboard');
       return;
     }
     
-    // Opción 2: Intentar volver a la página anterior
     if (window.history.length > 1) {
       console.log('Usando history.back()');
       window.history.back();
       return;
     }
     
-    // Opción 3: Redirigir a admin usando diferentes rutas posibles
-    console.log('Redirigiendo directamente a /admin');
-    
-    // Prueba diferentes formatos de ruta
     const baseUrl = window.location.origin;
     const possiblePaths = [
       '/admin',
@@ -69,7 +69,6 @@ const ReporteSemanal = ({ onNavigate }) => {
       }
     }
     
-    // Opción 4: Último recurso - recargar la página principal
     console.log('Recargando página principal');
     window.location.href = baseUrl;
   };
@@ -90,6 +89,376 @@ const ReporteSemanal = ({ onNavigate }) => {
       console.error('Error cargando reportes:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+// Función para probar múltiples rutas posibles
+const probarEndpointsInscripciones = async (idUsuario) => {
+  console.log('🔍 === PROBANDO TODOS LOS ENDPOINTS DE INSCRIPCIONES ===');
+  
+  const endpoints = [
+    // Formato estándar
+    `/api/inscripciones/usuario/${idUsuario}`,
+    `/api/usuarios/${idUsuario}/inscripciones`,
+    `/api/users/${idUsuario}/enrollments`,
+    
+    // Con query parameters
+    `/api/inscripciones?userId=${idUsuario}`,
+    `/api/inscripciones?usuario=${idUsuario}`,
+    `/api/inscripciones?user_id=${idUsuario}`,
+    `/api/inscripciones?idUsuario=${idUsuario}`,
+    
+    // Formato alternativo
+    `/api/enrollments?userId=${idUsuario}`,
+    `/api/matriculas?usuarioId=${idUsuario}`,
+    `/api/cursos-inscritos/${idUsuario}`,
+    
+    // Para ver todas las inscripciones
+    `/api/inscripciones`,
+    `/api/todas-inscripciones`
+  ];
+  
+  const resultados = [];
+  
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`\n🔍 Probando: ${endpoint}`);
+      const response = await fetch(`http://localhost:3000${endpoint}`);
+      
+      const resultado = {
+        endpoint,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      };
+      
+      if (response.ok) {
+        const data = await response.json();
+        resultado.data = data;
+        resultado.count = Array.isArray(data) ? data.length : 'No es array';
+        
+        // Verificar si contiene datos del usuario específico
+        if (Array.isArray(data) && data.length > 0) {
+          const primera = data[0];
+          const clavesUsuario = Object.keys(primera).filter(key => 
+            key.includes('usuario') || key.includes('user') || key.includes('id_usuario')
+          );
+          resultado.userFields = clavesUsuario;
+          
+          // Contar cuántas son del usuario
+          const delUsuario = data.filter(item => {
+            const usuarioId = 
+              item.id_usuario || 
+              item.usuario_id || 
+              item.userId || 
+              item.usuarioId;
+            return usuarioId == idUsuario;
+          });
+          resultado.userCount = delUsuario.length;
+        }
+      }
+      
+      resultados.push(resultado);
+      console.log(`   Status: ${resultado.status}, Count: ${resultado.count}`);
+      
+    } catch (error) {
+      console.log(`   ❌ Error: ${error.message}`);
+      resultados.push({
+        endpoint,
+        error: error.message
+      });
+    }
+    
+    // Pequeña pausa
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log('\n📋 RESULTADOS COMPLETOS:', resultados);
+  
+  // Mostrar resumen
+  const endpointsQueFuncionan = resultados.filter(r => r.ok);
+  console.log('\n✅ ENDPOINTS QUE FUNCIONAN:');
+  endpointsQueFuncionan.forEach(r => {
+    console.log(`   ${r.endpoint} - ${r.count} items`);
+    if (r.userCount !== undefined) {
+      console.log(`     • Del usuario ${idUsuario}: ${r.userCount} items`);
+    }
+  });
+  
+  return resultados;
+};
+
+
+
+
+
+  // FUNCIÓN MEJORADA: Cargar cursos del estudiante
+const cargarCursosEstudiante = async (idUsuario) => {
+  try {
+    setCargandoDetalles(true);
+    console.log(`🔍 Cargando cursos para usuario: ${idUsuario}`);
+    
+    // 1. Usar el endpoint específico de progreso
+    const responseProgreso = await fetch(`http://localhost:3000/api/inscripciones/progreso-curso/usuario/${idUsuario}`);
+    
+    if (!responseProgreso.ok) {
+      throw new Error(`Error ${responseProgreso.status}: ${responseProgreso.statusText}`);
+    }
+    
+    const datosProgreso = await responseProgreso.json();
+    console.log('📊 Datos de progreso del usuario:', datosProgreso);
+    
+    if (!datosProgreso || datosProgreso.length === 0) {
+      setDetallesCursos([]);
+      setMostrarDetallesCursos(true);
+      setMostrarDetallesCanjes(false);
+      alert(`⚠️ No se encontró progreso de cursos para el usuario ${idUsuario}`);
+      return;
+    }
+    
+    // 2. Obtener información adicional de los cursos (para nombres y descripciones)
+    const responseCursos = await fetch('http://localhost:3000/api/cursos');
+    
+    if (!responseCursos.ok) {
+      throw new Error(`Error al obtener cursos: ${responseCursos.status}`);
+    }
+    
+    const todosLosCursos = await responseCursos.json();
+    
+    // 3. Crear un mapa de IDs de curso a información
+    const mapaCursos = {};
+    todosLosCursos.forEach(curso => {
+      const id = curso.id_curso || curso.id;
+      if (id) {
+        mapaCursos[id] = {
+          nombre: curso.nombre_curso || curso.nombre || `Curso ${id}`,
+          descripcion: curso.descripcion || curso.descripcion_curso || 'Sin descripción',
+          duracion: curso.duracion,
+          estado_disponibilidad: curso.estado_disponibilidad
+        };
+      }
+    });
+    
+    // 4. Procesar los datos de progreso - SIN CALIFICACIÓN
+    const cursosProcesados = datosProgreso.map((progreso, index) => {
+      const idCurso = progreso.id_curso || progreso.curso_id;
+      const infoCurso = mapaCursos[idCurso] || {
+        nombre: `Curso ${idCurso || 'Desconocido'}`,
+        descripcion: 'Información no disponible'
+      };
+      
+      return {
+        id: progreso.id_inscripcion || progreso.id || `prog-${index}`,
+        nombre_curso: infoCurso.nombre,
+        fecha_inscripcion: progreso.fecha_inscripcion || progreso.fecha_registro || 'Fecha no disponible',
+        estado: progreso.estado_inscripcion || progreso.estado || 'ACTIVO',
+        progreso: parseFloat(progreso.progreso || progreso.porcentaje_completado || 0),
+        // CALIFICACIÓN ELIMINADA
+        descripcion_curso: infoCurso.descripcion,
+        duracion: infoCurso.duracion,
+        estado_disponibilidad: infoCurso.estado_disponibilidad,
+        id_curso: idCurso,
+        id_usuario: progreso.id_usuario || idUsuario,
+        
+        // Campos específicos del progreso (si existen)
+        ultimo_acceso: progreso.ultimo_acceso || progreso.last_access,
+        fecha_completado: progreso.fecha_completado || progreso.completion_date,
+        horas_estudiadas: progreso.horas_estudiadas || progreso.study_hours,
+        
+        // Para debug
+        _raw: progreso
+      };
+    });
+    
+    console.log('🎯 Cursos con progreso procesados:', cursosProcesados);
+    
+    // 5. Calcular estadísticas - SIMPLIFICADO SIN "CURSOS ACTIVOS"
+    const calcularEstadisticas = () => {
+      const total = cursosProcesados.length;
+      
+      // CONTAR CURSOS COMPLETADOS (PROGRESO >= 100)
+      const completados = cursosProcesados.filter(c => 
+        c.progreso >= 100 || 
+        c.estado === 'COMPLETADO' || 
+        c.estado === 'completed' ||
+        c.estado === 'FINALIZADO'
+      ).length;
+      
+      const promedioProgreso = cursosProcesados.reduce((sum, c) => sum + c.progreso, 0) / total;
+      
+      return {
+        total,
+        completados,
+        promedioProgreso,
+        porcentajeCompletado: (completados / total * 100).toFixed(1)
+      };
+    };
+    
+    const estadisticas = calcularEstadisticas();
+    console.log('📊 Estadísticas calculadas:', estadisticas);
+    
+    // 6. Comparar con estadísticas de reportes
+    const cursosReportados = actividadIndividual?.cursos_inscritos || 0;
+    
+    if (estadisticas.total !== parseInt(cursosReportados)) {
+      console.warn(`⚠️ Diferencia con reportes:
+        Reportes: ${cursosReportados}
+        Progreso API: ${estadisticas.total}
+        Diferencia: ${estadisticas.total - parseInt(cursosReportados)}`);
+    }
+    
+    // 7. Guardar datos
+    setDetallesCursos(cursosProcesados);
+    setMostrarDetallesCursos(true);
+    setMostrarDetallesCanjes(false);
+    
+    // 8. Mostrar resumen SIMPLIFICADO
+    console.log(`📋 RESUMEN FINAL:
+      • Cursos encontrados: ${estadisticas.total}
+      • Cursos completados: ${estadisticas.completados} (${estadisticas.porcentajeCompletado}%)
+      • Progreso promedio: ${estadisticas.promedioProgreso.toFixed(1)}%`);
+    
+  } catch (error) {
+    console.error('❌ Error cargando cursos con progreso:', error);
+    
+    // Fallback: intentar con el endpoint antiguo
+    try {
+      console.log('🔄 Intentando con endpoint alternativo...');
+      await cargarCursosEstudianteFallback(idUsuario);
+    } catch (fallbackError) {
+      console.error('❌ Error en fallback:', fallbackError);
+      
+      // Mostrar información mínima
+      const cursosReportados = actividadIndividual?.cursos_inscritos || 0;
+      if (cursosReportados > 0) {
+        setDetallesCursos([{
+          id: 'error-progreso',
+          nombre_curso: 'Error al cargar progreso',
+          fecha_inscripcion: new Date().toISOString().split('T')[0],
+          estado: 'ERROR',
+          progreso: 0,
+          // Sin calificación
+          descripcion_curso: `Error: ${error.message}. Reportes indican ${cursosReportados} cursos.`
+        }]);
+      } else {
+        setDetallesCursos([]);
+      }
+      setMostrarDetallesCursos(true);
+      setMostrarDetallesCanjes(false);
+    }
+    
+  } finally {
+    setCargandoDetalles(false);
+  }
+};
+
+// Función fallback por si el endpoint de progreso falla - SIMPLIFICADA
+const cargarCursosEstudianteFallback = async (idUsuario) => {
+  try {
+    // Intentar con el endpoint original
+    const response = await fetch(`http://localhost:3000/api/inscripciones?usuarioId=${idUsuario}`);
+    const data = await response.json();
+    
+    const inscripcionesUsuario = data.filter(item => {
+      const usuarioId = item.id_usuario || item.usuario_id;
+      return usuarioId == idUsuario;
+    });
+    
+    if (inscripcionesUsuario.length === 0) {
+      setDetallesCursos([]);
+      return;
+    }
+    
+    // Obtener información de cursos
+    const responseCursos = await fetch('http://localhost:3000/api/cursos');
+    const todosLosCursos = await responseCursos.json();
+    
+    const mapaCursos = {};
+    todosLosCursos.forEach(curso => {
+      const id = curso.id_curso || curso.id;
+      if (id) {
+        mapaCursos[id] = {
+          nombre: curso.nombre_curso || curso.nombre,
+          descripcion: curso.descripcion || curso.descripcion_curso
+        };
+      }
+    });
+    
+    const cursosProcesados = inscripcionesUsuario.map((ins, index) => {
+      const idCurso = ins.id_curso;
+      const infoCurso = mapaCursos[idCurso] || { nombre: `Curso ${idCurso}`, descripcion: 'Sin info' };
+      
+      return {
+        id: ins.id_inscripcion || ins.id,
+        nombre_curso: infoCurso.nombre,
+        fecha_inscripcion: ins.fecha_inscripcion || 'No disponible',
+        estado: ins.estado_inscripcion || 'ACTIVO',
+        progreso: 0, // Sin información de progreso
+        // Sin calificación
+        descripcion_curso: infoCurso.descripcion
+      };
+    });
+    
+    setDetallesCursos(cursosProcesados);
+    setMostrarDetallesCursos(true);
+    setMostrarDetallesCanjes(false);
+    
+  } catch (error) {
+    throw error; // Re-lanzar para manejo superior
+  }
+};
+
+
+  // FUNCIÓN MEJORADA: Cargar canjes del estudiante
+  const cargarCanjesEstudiante = async (idUsuario) => {
+    try {
+      setCargandoDetalles(true);
+      console.log(`Cargando canjes para estudiante ID: ${idUsuario}`);
+      
+      const response = await fetch(`http://localhost:3000/api/canjes/usuario/${idUsuario}`);
+      
+      console.log('Respuesta de canjes:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Canjes obtenidos:', data);
+        
+        if (Array.isArray(data)) {
+          // Procesar los datos para tener un formato consistente
+          const canjesProcesados = data.map(canje => ({
+            id: canje.id_canje || canje.id,
+            nombre_recompensa: canje.nombre_recompensa || canje.recompensa?.nombre || 'Recompensa sin nombre',
+            fecha_canje: canje.fecha_canje || canje.fecha_registro || 'Fecha no disponible',
+            utilizado: canje.utilizado || canje.estado_utilizado || false,
+            descripcion_recompensa: canje.descripcion_recompensa || canje.recompensa?.descripcion || 'Sin descripción',
+            tipo_recompensa: canje.tipo_recompensa || canje.categoria || 'General',
+            // Si hay puntos usados, incluirlos, sino dejar null
+            puntos_usados: canje.puntos_usados || canje.costo_puntos || null
+          }));
+          
+          setDetallesCanjes(canjesProcesados);
+          setMostrarDetallesCanjes(true);
+          setMostrarDetallesCursos(false);
+        } else {
+          console.error('Los datos de canjes no son un array:', data);
+          setDetallesCanjes([]);
+          setMostrarDetallesCanjes(true);
+          setMostrarDetallesCursos(false);
+        }
+      } else {
+        console.error('Error en la respuesta de canjes:', response.status);
+        setDetallesCanjes([]);
+        setMostrarDetallesCanjes(true);
+        setMostrarDetallesCursos(false);
+      }
+    } catch (error) {
+      console.error('Error cargando canjes:', error);
+      // Si hay error, mostrar sección vacía
+      setDetallesCanjes([]);
+      setMostrarDetallesCanjes(true);
+      setMostrarDetallesCursos(false);
+    } finally {
+      setCargandoDetalles(false);
     }
   };
 
@@ -129,16 +498,12 @@ const ReporteSemanal = ({ onNavigate }) => {
 
   const cargarActividadNuevosEstudiantes = async (idsUsuarios) => {
     try {
-      console.log('🔍 [DEBUG] IDs enviados al backend:', idsUsuarios);
-      
       if (!idsUsuarios || idsUsuarios.length === 0) {
-        console.warn('⚠️  No hay IDs para enviar');
         setReporteActividadNuevos({ actividad: [] });
         return;
       }
 
       const idsString = idsUsuarios.join(',');
-      console.log('📤 [DEBUG] IDs como string:', idsString);
       
       const response = await fetch(
         `http://localhost:3000/api/reportes/actividad-nuevos?ids=${idsString}`,
@@ -150,23 +515,15 @@ const ReporteSemanal = ({ onNavigate }) => {
         }
       );
       
-      console.log('📤 [DEBUG] Estado de respuesta:', response.status);
-      console.log('📤 [DEBUG] URL completa:', response.url);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [DEBUG] Error en respuesta:', errorText);
-        throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
+        throw new Error(`Error HTTP: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('✅ [DEBUG] Datos recibidos:', data);
-      console.log('✅ [DEBUG] Cantidad de actividades:', data.actividad?.length || 0);
-      
       setReporteActividadNuevos(data);
       
     } catch (error) {
-      console.error('❌ [DEBUG] Error completo:', error);
+      console.error('Error cargando actividad nuevos estudiantes:', error);
       setReporteActividadNuevos({ actividad: [] });
     }
   };
@@ -196,6 +553,10 @@ const ReporteSemanal = ({ onNavigate }) => {
         ...data.actividad?.[0] || {},
         estudianteInfo: estudiante
       });
+      
+      // Cerrar los detalles al cargar nueva actividad
+      setMostrarDetallesCursos(false);
+      setMostrarDetallesCanjes(false);
       
       setActiveTab('actividad-detalle');
       
@@ -947,11 +1308,24 @@ const ReporteSemanal = ({ onNavigate }) => {
               </div>
             ) : actividadIndividual ? (
               <>
+                {/* MODIFICADO: Estadísticas con botones clickeables */}
                 <div className="stats-grid-detalle">
-                  <div className="stat-card detalle">
+                  <div 
+                    className="stat-card detalle clickeable"
+                    onClick={() => {
+                      if (actividadIndividual.estudianteInfo?.id_usuario) {
+                        cargarCursosEstudiante(actividadIndividual.estudianteInfo.id_usuario);
+                      } else {
+                        alert('No se puede cargar los cursos: ID de estudiante no disponible');
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title="Haz clic para ver los cursos inscritos"
+                  >
                     <div className="stat-icon">📚</div>
                     <div className="stat-value">{actividadIndividual.cursos_inscritos || 0}</div>
                     <div className="stat-label">Cursos Inscritos</div>
+                    <div className="stat-hint">👆 Haz clic para ver detalles</div>
                   </div>
                   
                   <div className="stat-card detalle">
@@ -960,10 +1334,22 @@ const ReporteSemanal = ({ onNavigate }) => {
                     <div className="stat-label">Puntos Obtenidos</div>
                   </div>
                   
-                  <div className="stat-card detalle">
+                  <div 
+                    className="stat-card detalle clickeable"
+                    onClick={() => {
+                      if (actividadIndividual.estudianteInfo?.id_usuario) {
+                        cargarCanjesEstudiante(actividadIndividual.estudianteInfo.id_usuario);
+                      } else {
+                        alert('No se puede cargar los canjes: ID de estudiante no disponible');
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title="Haz clic para ver los canjes realizados"
+                  >
                     <div className="stat-icon">🎁</div>
                     <div className="stat-value">{actividadIndividual.recompensas_canjeadas || 0}</div>
                     <div className="stat-label">Recompensas Canjeadas</div>
+                    <div className="stat-hint">👆 Haz clic para ver detalles</div>
                   </div>
                   
                   <div className="stat-card detalle">
@@ -978,6 +1364,181 @@ const ReporteSemanal = ({ onNavigate }) => {
                   </div>
                 </div>
 
+                {/* SECCIÓN DE DETALLES DE CURSOS - MEJORADA */}
+                {mostrarDetallesCursos && (
+                  <div className="detalles-seccion">
+    <div className="detalles-header">
+      <h3>📚 Cursos Inscritos del Estudiante</h3>
+      <button 
+        className="btn-cerrar-detalles"
+        onClick={() => setMostrarDetallesCursos(false)}
+      >
+        ✕ Cerrar
+      </button>
+    </div>
+    
+    {cargandoDetalles ? (
+      <div className="loading-detalles">
+        <div className="spinner pequeño"></div>
+        <p>Cargando cursos del estudiante...</p>
+      </div>
+    ) : detallesCursos.length > 0 ? (
+      <div className="lista-detalles">
+        {/* ESTADÍSTICAS SIMPLIFICADAS */}
+        <div className="estadisticas-simples">
+          <div className="estadistica-simple">
+            <span className="estadistica-numero">{detallesCursos.length}</span>
+            <span className="estadistica-texto">Cursos Totales</span>
+          </div>
+          <div className="estadistica-simple">
+            <span className="estadistica-numero">
+              {detallesCursos.filter(c => c.progreso >= 100).length}
+            </span>
+            <span className="estadistica-texto">Completados</span>
+          </div>
+          <div className="estadistica-simple">
+            <span className="estadistica-numero">
+              {(
+                detallesCursos.reduce((sum, c) => sum + c.progreso, 0) / 
+                detallesCursos.length || 0
+              ).toFixed(1)}%
+            </span>
+            <span className="estadistica-texto">Progreso Promedio</span>
+          </div>
+        </div>
+        
+        {/* TABLA SIN COLUMNA DE CALIFICACIÓN */}
+        <table className="tabla-detalles">
+          <thead>
+            <tr>
+              <th>Curso</th>
+              <th>Fecha Inscripción</th>
+              <th>Estado</th>
+              <th>Progreso</th>
+              {/* CALIFICACIÓN ELIMINADA */}
+            </tr>
+          </thead>
+          <tbody>
+            {detallesCursos.map((curso, index) => (
+              <tr key={index}>
+                <td>
+                  <strong>{curso.nombre_curso}</strong>
+                  <div className="curso-desc">
+                    {curso.descripcion_curso}
+                  </div>
+                </td>
+                <td>{formatearFecha(curso.fecha_inscripcion)}</td>
+                <td>
+                  <span className={`badge-estado ${
+                    curso.estado === 'ACTIVO' ? 'activo' : 
+                    curso.estado === 'COMPLETADO' ? 'completado' : 
+                    'inactivo'
+                  }`}>
+                    {curso.estado}
+                  </span>
+                </td>
+                <td>
+                  <div className="progreso-bar">
+                    <div 
+                      className="progreso-fill"
+                      style={{ width: `${curso.progreso || 0}%` }}
+                    ></div>
+                    <span className="progreso-text">{curso.progreso || 0}%</span>
+                  </div>
+                </td>
+                {/* CALIFICACIÓN ELIMINADA */}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        
+        {/* RESUMEN SIMPLIFICADO */}
+        <div className="resumen-cursos">
+          <p><strong>Total de cursos:</strong> {detallesCursos.length}</p>
+          <p><strong>Cursos completados:</strong> {detallesCursos.filter(c => c.progreso >= 100).length}</p>
+          <p><strong>Porcentaje completado:</strong> {
+            ((detallesCursos.filter(c => c.progreso >= 100).length / detallesCursos.length) * 100 || 0).toFixed(1)
+          }%</p>
+        </div>
+      </div>
+    ) : (
+      <div className="sin-datos-detalles">
+        <p>El estudiante no tiene cursos inscritos</p>
+      </div>
+    )}
+  </div>
+)}
+
+                {/* SECCIÓN DE DETALLES DE CANJES - SIMPLIFICADA */}
+                {mostrarDetallesCanjes && (
+                  <div className="detalles-seccion">
+                    <div className="detalles-header">
+                      <h3>🎁 Canjes Realizados por el Estudiante</h3>
+                      <button 
+                        className="btn-cerrar-detalles"
+                        onClick={() => setMostrarDetallesCanjes(false)}
+                      >
+                        ✕ Cerrar
+                      </button>
+                    </div>
+                    
+                    {cargandoDetalles ? (
+                      <div className="loading-detalles">
+                        <div className="spinner pequeño"></div>
+                        <p>Cargando canjes del estudiante...</p>
+                      </div>
+                    ) : detallesCanjes.length > 0 ? (
+                      <div className="lista-detalles">
+                        <table className="tabla-detalles">
+                          <thead>
+                            <tr>
+                              <th>Recompensa</th>
+                              <th>Fecha Canje</th>
+                              <th>Tipo</th>
+                              <th>Estado</th>
+                              <th>Descripción</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {detallesCanjes.map((canje, index) => (
+                              <tr key={index}>
+                                <td>
+                                  <strong>{canje.nombre_recompensa}</strong>
+                                </td>
+                                <td>{formatearFecha(canje.fecha_canje)}</td>
+                                <td>
+                                  <span className="badge-tipo">
+                                    {canje.tipo_recompensa}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className={`badge-estado ${canje.utilizado ? 'utilizado' : 'disponible'}`}>
+                                    {canje.utilizado ? 'UTILIZADO' : 'DISPONIBLE'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="canje-desc">
+                                    {canje.descripcion_recompensa}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="resumen-canjes">
+                          <p><strong>Total de canjes:</strong> {detallesCanjes.length}</p>
+                          <p><strong>Canjes utilizados:</strong> {detallesCanjes.filter(c => c.utilizado).length}</p>
+                          <p><strong>Canjes disponibles:</strong> {detallesCanjes.filter(c => !c.utilizado).length}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="sin-datos-detalles">
+                        <p>El estudiante no ha realizado canjes</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="estado-general">
                   <h3>Estado de Participación</h3>
                   <div className={`badge-estado ${(actividadIndividual.cursos_inscritos || 0) > 0 ? 'activo' : 'inactivo'}`}>
@@ -990,41 +1551,6 @@ const ReporteSemanal = ({ onNavigate }) => {
                     }
                   </p>
                 </div>
-
-                {actividadIndividual.detalles && (
-                  <div className="info-adicional">
-                    <h3>Información Adicional</h3>
-                    <div className="info-adicional-grid">
-                      {actividadIndividual.detalles.cursos.length > 0 && (
-                        <div className="info-item">
-                          <h4>Cursos Inscritos:</h4>
-                          <ul>
-                            {actividadIndividual.detalles.cursos.slice(0, 5).map((curso, index) => (
-                              <li key={index}>{curso.nombre_curso || `Curso ${index + 1}`}</li>
-                            ))}
-                            {actividadIndividual.detalles.cursos.length > 5 && (
-                              <li>... y {actividadIndividual.detalles.cursos.length - 5} más</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {actividadIndividual.detalles.recompensas.length > 0 && (
-                        <div className="info-item">
-                          <h4>Recompensas Canjeadas:</h4>
-                          <ul>
-                            {actividadIndividual.detalles.recompensas.slice(0, 3).map((recompensa, index) => (
-                              <li key={index}>{recompensa.nombre || `Recompensa ${index + 1}`}</li>
-                            ))}
-                            {actividadIndividual.detalles.recompensas.length > 3 && (
-                              <li>... y {actividadIndividual.detalles.recompensas.length - 3} más</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <div className="sin-datos">

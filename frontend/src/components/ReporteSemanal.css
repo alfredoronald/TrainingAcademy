@@ -1393,3 +1393,354 @@
 .reporte-header p {
   margin: 0 0 15px 0;
 }
+
+
+
+
+
+
+/* Estilos para los detalles de cursos y canjes */
+
+/* Estadísticas clickeables */
+.stat-card.clickeable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.stat-card.clickeable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #4a90e2;
+}
+
+.stat-card.clickeable .stat-hint {
+  font-size: 11px;
+  color: #666;
+  margin-top: 5px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card.clickeable:hover .stat-hint {
+  opacity: 1;
+  color: #4a90e2;
+}
+
+/* Sección de detalles */
+.detalles-seccion {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detalles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.detalles-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.btn-cerrar-detalles {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.btn-cerrar-detalles:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+/* Tabla de detalles */
+.tabla-detalles {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.tabla-detalles th {
+  background: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabla-detalles td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+.tabla-detalles tr:hover td {
+  background-color: #f8f9fa;
+}
+
+/* Estilos específicos para cursos */
+.curso-desc {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  line-height: 1.4;
+  max-width: 300px;
+}
+
+.progreso-bar {
+  width: 100%;
+  height: 20px;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progreso-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  transition: width 0.3s ease;
+}
+
+.progreso-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.calificacion {
+  font-weight: 600;
+  color: #28a745;
+  background: #d4edda;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.sin-calificacion {
+  color: #6c757d;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* Estilos específicos para canjes */
+.badge-tipo {
+  font-size: 11px;
+  color: #fff;
+  background: #6f42c1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.canje-desc {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+  max-width: 200px;
+}
+
+/* Badges de estado */
+.badge-estado {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-estado.activo {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-estado.inactivo {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.badge-estado.utilizado {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.badge-estado.disponible {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Resumen */
+.resumen-cursos,
+.resumen-canjes {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 15px;
+}
+
+.resumen-cursos p,
+.resumen-canjes p {
+  margin: 5px 0;
+  font-size: 13px;
+  color: #495057;
+}
+
+.resumen-cursos strong,
+.resumen-canjes strong {
+  color: #212529;
+  margin-right: 5px;
+}
+
+/* Loading para detalles */
+.loading-detalles {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading-detalles .spinner {
+  margin: 0 auto 15px;
+}
+
+/* Sin datos en detalles */
+.sin-datos-detalles {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tabla-detalles {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .tabla-detalles th,
+  .tabla-detalles td {
+    min-width: 150px;
+  }
+  
+  .detalles-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .btn-cerrar-detalles {
+    align-self: flex-end;
+  }
+}
+
+/* Estadísticas simplificadas */
+.estadisticas-simples {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.estadistica-simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.estadistica-numero {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #0d47a1;
+}
+
+.estadistica-texto {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+/* Ajustar tabla para 4 columnas */
+.tabla-detalles {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-detalles th {
+  background: #e9ecef;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.tabla-detalles td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Ajustar ancho de columnas (4 columnas en lugar de 5) */
+.tabla-detalles th:nth-child(1),
+.tabla-detalles td:nth-child(1) {
+  width: 40%; /* Curso */
+}
+
+.tabla-detalles th:nth-child(2),
+.tabla-detalles td:nth-child(2) {
+  width: 15%; /* Fecha */
+}
+
+.tabla-detalles th:nth-child(3),
+.tabla-detalles td:nth-child(3) {
+  width: 15%; /* Estado */
+}
+
+.tabla-detalles th:nth-child(4),
+.tabla-detalles td:nth-child(4) {
+  width: 30%; /* Progreso */
+}
