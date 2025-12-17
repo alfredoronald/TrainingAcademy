@@ -2996,6 +2996,13 @@ export default function AdminDashboard({ onNavigate }) {
               <User className="w-5 h-5" />
               Perfil
             </button>
+            <button
+              onClick={() => onNavigate("reportes-sistema")}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              <FileText className="w-5 h-5" />
+              Reportes
+            </button>
           </div>
         </div>
       </header>

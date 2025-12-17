@@ -60,6 +60,7 @@ import { InsigniaModule } from './modules/insignia/insignia.module';
 import { UsuarioInsigniaModule } from './modules/usuario-insignia/usuario-insignia.module';
 import { AuthModule } from './auth/auth.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
+import { ReportesSistemaModule } from './modules/reportes-sistema/reportes-sistema.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -81,7 +82,7 @@ import { ReportesModule } from './modules/reportes/reportes.module';
     CursoModule, HorarioCursoModule, AsistenciaModule, TipoCursoModule, InscripcionModule,
     PagoModule, ProgresoCursoModule, ModuloModule, ProgresoModuloModule, TemarioModule,
     ProgresoTemaModule, ForoModule, MensajeModule, EvaluacionModule, PuntajeModule,
-    RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule, ReportesModule,AuthModule
+    RecompensaModule, CanjeModule, RankingModule, InsigniaModule, UsuarioInsigniaModule, ReportesModule, ReportesSistemaModule,AuthModule
   
   ],
 

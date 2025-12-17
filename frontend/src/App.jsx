@@ -21,6 +21,7 @@ import RewardsScreen from './components/RewardsScreen';
 import ReporteSemanal from "./components/ReporteSemanal";
 import RolesPanel from './components/roles-panel.jsx';
 import EvaluationForm from './components/EvaluationForm.jsx';
+import ReportesSistema from './components/reportes-sistema.jsx';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -246,6 +247,11 @@ function App() {
       case 'admin-permissions':
         return (
           <RolesPanel {...commonProps} />
+        );
+
+      case 'reportes-sistema':  // <-- NUEVO CASO
+        return (
+          <ReportesSistema {...commonProps} />
         );
 
       case 'course-detail':
