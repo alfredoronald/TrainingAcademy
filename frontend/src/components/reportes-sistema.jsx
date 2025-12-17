@@ -373,46 +373,116 @@ export default function ReportesSistema({ onNavigate }) {
   };
 
   // Renderizar detalle completo
-  const renderDetalleCompleto = () => {
-    if (!reporteData) return null;
-    
+  // Renderizar detalle completo CON TARJETAS
+const renderDetalleCompleto = () => {
+  if (!reporteData) return null;
+  
+  // Función auxiliar para renderizar arrays de objetos como tarjetas
+  const renderArrayAsTarjetas = (array, sectionName) => {
+    if (!Array.isArray(array) || array.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No hay datos disponibles
+        </div>
+      );
+    }
+
     return (
-      <div className="space-y-4">
-        {Object.entries(reporteData).map(([key, value]) => {
-          if (key === "rango_fechas") return null;
-          
-          const isExpanded = expandedSections[key] || false;
-          
-          return (
-            <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => toggleSection(key)}
-                className="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-left"
-              >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-                  <span className="font-semibold text-gray-900">
-                    {key.replace(/_/g, " ").toUpperCase()}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {array.map((item, index) => (
+          <div
+            key={index}
+            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200"
+          >
+            {/* Renderizar cada propiedad del objeto */}
+            {Object.entries(item).map(([key, value]) => (
+              <div key={key} className="mb-3 last:mb-0">
+                <div className="flex justify-between items-start gap-4">
+                  <span className="text-sm font-medium text-gray-600 capitalize">
+                    {key.replace(/_/g, " ")}:
                   </span>
-                  <span className="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                    {Array.isArray(value) ? `${value.length} items` : typeof value}
+                  <span className="text-sm text-gray-900 font-semibold text-right">
+                    {typeof value === 'object' && value !== null
+                      ? JSON.stringify(value)
+                      : String(value)}
                   </span>
                 </div>
-              </button>
-              
-              {isExpanded && (
-                <div className="p-6 bg-white">
-                  <pre className="text-sm text-gray-800 overflow-x-auto">
-                    {JSON.stringify(value, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          );
-        })}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     );
   };
+
+  // Función auxiliar para renderizar objetos simples
+  const renderObjetoSimple = (objeto) => {
+    return (
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Object.entries(objeto).map(([key, value]) => (
+            <div key={key} className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                {key.replace(/_/g, " ")}
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {typeof value === 'number' ? value.toLocaleString() : String(value)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(reporteData).map(([key, value]) => {
+        if (key === "rango_fechas") return null;
+        
+        const isExpanded = expandedSections[key] || false;
+        
+        return (
+          <div key={key} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+            <button
+              onClick={() => toggleSection(key)}
+              className="w-full px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 flex items-center justify-between text-left transition-all"
+            >
+              <div className="flex items-center gap-3">
+                {isExpanded ? (
+                  <ChevronUp className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                )}
+                <span className="font-semibold text-gray-900 text-lg">
+                  {key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+                <span className="text-sm text-white bg-blue-600 px-3 py-1 rounded-full">
+                  {Array.isArray(value) ? `${value.length} registros` : typeof value}
+                </span>
+              </div>
+            </button>
+            
+            {isExpanded && (
+              <div className="p-6 bg-gray-50">
+                {Array.isArray(value) 
+                  ? renderArrayAsTarjetas(value, key)
+                  : typeof value === 'object' && value !== null
+                  ? renderObjetoSimple(value)
+                  : (
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <p className="text-gray-900 font-medium">{String(value)}</p>
+                    </div>
+                  )
+                }
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
   // Renderizar selector de rangos rápidos
   const RenderRangosRapidos = () => (
